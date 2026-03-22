@@ -1,0 +1,25 @@
+{
+  "name": "@datahouse/client",
+  "version": "0.0.1",
+  "module": "src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@datahouse/core": "workspace:*",
+    "@datahouse/runtime": "workspace:*",
+    "@elysiajs/eden": "^1.4.8",
+    "elysia": "^1.4.28",
+    "zod": "^4.3.6"
+  }
+}

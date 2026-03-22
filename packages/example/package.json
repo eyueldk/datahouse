@@ -1,0 +1,21 @@
+{
+  "name": "example",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "datahouse serve",
+    "studio": "datahouse studio"
+  },
+  "dependencies": {
+    "datahouse": "workspace:*",
+    "wikibase-sdk": "^10.2.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

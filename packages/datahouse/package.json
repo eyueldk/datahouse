@@ -1,0 +1,53 @@
+{
+  "name": "datahouse",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "DataHouse framework",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./core": {
+      "types": "./dist/core.d.mts",
+      "import": "./dist/core.mjs",
+      "default": "./dist/core.mjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.mjs",
+      "default": "./dist/client.mjs"
+    }
+  },
+  "bin": {
+    "datahouse": "dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "cmd-ts": "^0.13.0"
+  },
+  "devDependencies": {
+    "@datahouse/client": "workspace:*",
+    "@datahouse/core": "workspace:*",
+    "@datahouse/runtime": "workspace:*",
+    "@types/bun": "latest",
+    "tsdown": "^0.21.4",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
