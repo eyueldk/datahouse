@@ -47,7 +47,7 @@ export const extractTask = taskBackend.register<
         config: source.config,
         cursor: source.cursor,
         upload: async (params: {
-          content: File | Blob | ArrayBuffer;
+          content: File | Blob | Buffer;
           name?: string;
           mimeType?: string;
         }) => {
@@ -68,10 +68,7 @@ export const extractTask = taskBackend.register<
           const { content } = await downloadFile({ id: params.id });
           return content;
         },
-        emit: async (
-          items: Array<{ key: string; data: unknown }>,
-          cursor?: unknown,
-        ) => {
+        emit: async ({ items, cursor }) => {
           if (items.length > 0) {
             const insertedRows = await saveBronzeRecords({
               runId: run.id,

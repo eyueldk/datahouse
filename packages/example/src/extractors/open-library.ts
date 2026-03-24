@@ -1,4 +1,4 @@
-import { createExtractor } from "datahouse";
+import { createExtractor } from "datahouse/core";
 import { z } from "zod";
 
 interface OpenLibrarySentenceObject {
@@ -66,11 +66,12 @@ export const openLibraryExtractor = createExtractor<
     const payload = (await response.json()) as OpenLibrarySearchResponse;
     const docs = payload.docs ?? [];
 
-    await emit(
-      docs.map((doc, index) => ({
+    await emit({
+      items: docs.map((doc, index) => ({
         key: doc.key ?? `open-library-${index}`,
         data: doc,
       })),
-    );
+    });
   },
 });
+

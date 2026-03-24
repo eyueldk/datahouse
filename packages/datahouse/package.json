@@ -1,6 +1,6 @@
 {
   "name": "datahouse",
-  "version": "0.0.1",
+  "version": "0.0.9",
   "type": "module",
   "description": "DataHouse framework",
   "publishConfig": {
@@ -40,12 +40,12 @@
     "cmd-ts": "^0.13.0"
   },
   "devDependencies": {
-    "@datahouse/client": "workspace:*",
-    "@datahouse/core": "workspace:*",
-    "@datahouse/runtime": "workspace:*",
     "@types/bun": "latest",
     "tsdown": "^0.21.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@datahouse/client": "workspace:*",
+    "@datahouse/core": "workspace:*",
+    "@datahouse/runtime": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"

@@ -12,19 +12,19 @@ export type CollectionData<
 
 export type EmitTransformFn<TCollection extends AnyCollection> = <
   TId extends TCollection["id"],
->(
-  collection: TId,
-  items: Array<{ key: string; data: CollectionData<TCollection, TId> }>,
-) => Promise<void>;
+>(params: {
+  collection: TId;
+  items: Array<{ key: string; data: CollectionData<TCollection, TId> }>;
+}) => Promise<void>;
 
 export interface TransformContext<TInput, TCollection extends AnyCollection> {
   data: TInput;
   upload: (params: {
-    content: File | Blob | ArrayBuffer;
+    content: File | Blob | Buffer;
     name?: string;
     mimeType?: string;
   }) => Promise<UploadedFile>;
-  download: (params: { id: string }) => Promise<ArrayBuffer>;
+  download: (params: { id: string }) => Promise<Buffer>;
   emit: EmitTransformFn<TCollection>;
 }
 

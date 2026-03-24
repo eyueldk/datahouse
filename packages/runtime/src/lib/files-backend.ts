@@ -5,10 +5,10 @@ export interface FilesWriteOptions {
 export type FilesBackend = {
   write(
     key: string,
-    data: Blob | ArrayBuffer,
+    data: Blob | Buffer,
     options?: FilesWriteOptions,
   ): Promise<void>;
-  read(key: string): Promise<ArrayBuffer>;
+  read(key: string): Promise<Buffer>;
   delete(key: string): Promise<void>;
 };
 

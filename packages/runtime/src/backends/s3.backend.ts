@@ -23,7 +23,7 @@ export function createS3Backend(options: S3BackendOptions): FilesBackend {
   return createFilesBackend({
     async write(
       key: string,
-      data: Blob | ArrayBuffer,
+      data: Blob | Buffer,
       opts?: FilesWriteOptions,
     ): Promise<void> {
       await client.file(key).write(data, {
@@ -31,8 +31,8 @@ export function createS3Backend(options: S3BackendOptions): FilesBackend {
       });
     },
 
-    async read(key: string): Promise<ArrayBuffer> {
-      return await client.file(key).arrayBuffer();
+    async read(key: string): Promise<Buffer> {
+      return Buffer.from(await client.file(key).arrayBuffer());
     },
 
     async delete(key: string): Promise<void> {

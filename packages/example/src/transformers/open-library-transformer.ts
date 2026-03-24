@@ -1,4 +1,4 @@
-import { createTransformer } from "datahouse";
+import { createTransformer } from "datahouse/core";
 import { booksCollection } from "../collections/books";
 import { openLibraryExtractor } from "../extractors/open-library";
 import type { OpenLibraryBook } from "../extractors/open-library";
@@ -48,11 +48,15 @@ export const openLibraryTransformer = createTransformer({
       source: "OpenLibrary",
     };
 
-    await emit("books", [
-      {
-        key: unifiedBook.id,
-        data: unifiedBook,
-      },
-    ]);
+    await emit({
+      collection: "books",
+      items: [
+        {
+          key: unifiedBook.id,
+          data: unifiedBook,
+        },
+      ],
+    });
   },
 });
+

@@ -1,26 +1,30 @@
-import { pgTable, text, timestamp, varchar, unique } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  varchar,
+  primaryKey,
+} from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 import { runs } from "./runs";
 import { bronzeRecords } from "./bronze-records";
-import { superjsonType } from "./superjson-type";
+import { superjsonb } from "./superjsonb";
 
 export const goldRecords = pgTable(
   "gold_records",
   {
-    id: varchar("id")
-      .$defaultFn(() => `gld_${nanoid()}`)
-      .primaryKey(),
     runId: varchar("run_id")
-      .references(() => runs.id, { onDelete: "cascade" })
-      .notNull(),
+      .notNull()
+      .references(() => runs.id),
     bronzeRecordId: varchar("bronze_record_id")
-      .references(() => bronzeRecords.id, { onDelete: "cascade" })
-      .notNull(),
+      .notNull()
+      .references(() => bronzeRecords.id),
     transformerId: text("transformer_id").notNull(),
     collection: text("collection").notNull(),
     key: text("key").notNull(),
-    data: superjsonType("data").notNull(),
+    data: superjsonb("data").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: varchar("id").$defaultFn(() => `gld_${nanoid()}`),
   },
-  (t) => [unique("gold_record_collection_key_unq").on(t.collection, t.key)],
+  (t) => [primaryKey({ columns: [t.runId, t.bronzeRecordId, t.transformerId] })],
 );

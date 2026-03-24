@@ -1,4 +1,4 @@
-import { createExtractor } from "datahouse";
+import { createExtractor } from "datahouse/core";
 import wbk from "wikibase-sdk";
 import { z } from "zod";
 
@@ -84,11 +84,12 @@ export const wikidataExtractor = createExtractor<
     const payload = (await response.json()) as WikidataSparqlResponse;
     const bindings = payload.results?.bindings ?? [];
 
-    await emit(
-      bindings.map((binding, index) => ({
+    await emit({
+      items: bindings.map((binding, index) => ({
         key: binding.book?.value ?? `wikidata-book-${index}`,
         data: binding,
       })),
-    );
+    });
   },
 });
+

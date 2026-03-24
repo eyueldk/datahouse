@@ -8,7 +8,7 @@ superjson.registerClass(UploadedFile);
  * Custom Drizzle type that stores JSON in a jsonb column using SuperJSON
  * for serialization/deserialization (preserves Date, BigInt, Map, Set, UploadedFile, etc.).
  */
-export const superjsonType = customType<{
+export const superjsonb = customType<{
   data: unknown;
   driverData: SuperJSONResult;
 }>({

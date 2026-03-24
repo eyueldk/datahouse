@@ -13,8 +13,8 @@ async function sha256Hex(blob: Blob): Promise<string> {
   return hasher.digest("hex");
 }
 
-function toBlob(content: File | Blob | ArrayBuffer, mimeType?: string): Blob {
-  if (content instanceof ArrayBuffer) {
+function toBlob(content: File | Blob | Buffer, mimeType?: string): Blob {
+  if (Buffer.isBuffer(content)) {
     return new Blob([content], {
       type: mimeType ?? "application/octet-stream",
     });
@@ -23,7 +23,7 @@ function toBlob(content: File | Blob | ArrayBuffer, mimeType?: string): Blob {
 }
 
 export async function uploadFile(params: {
-  content: File | Blob | ArrayBuffer;
+  content: File | Blob | Buffer;
   name?: string;
   mimeType?: string;
 }) {
@@ -35,10 +35,7 @@ export async function uploadFile(params: {
     mimeType: params.mimeType ?? "application/octet-stream",
   });
 
-  const size =
-    params.content instanceof ArrayBuffer
-      ? params.content.byteLength
-      : blob.size;
+  const size = Buffer.isBuffer(params.content) ? params.content.byteLength : blob.size;
 
   const [record] = await db
     .insert(files)

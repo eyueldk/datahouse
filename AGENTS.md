@@ -10,8 +10,8 @@
 - Use `uv` for Python package management and command execution (`uv add`, `uv run`).
 - Do not generate application migrations (manual or autogenerate) unless explicitly requested in that task; the user manages migrations.
 - Do not catch and rethrow errors unless adding handling/processing; otherwise let errors propagate naturally.
-- Prefer inferred return types in `@datahouse/client` functions instead of duplicating response type definitions; do not clamp pagination in the client—pass values through and let the server enforce limits.
-- For `@datahouse/runtime` Elysia routes, name reusable schema symbols with PascalCase and a `Request` or `Response` suffix; declare `response` schemas and return with `status(code, payload)` when wiring endpoints.
+- In `@datahouse/client`, prefer inferred return types instead of duplicating response types; do not clamp pagination—pass values through and let the server enforce limits. In `@datahouse/runtime` Elysia routes, name reusable schema symbols with PascalCase and a `Request` or `Response` suffix; declare `response` schemas and return with `status(code, payload)` when wiring endpoints.
+- Do not maintain hand-written `.d.ts` files alongside `.ts` sources; use `.ts` only unless the build emits declarations (e.g. published `dist/*.d.mts`).
 
 ## Learned Workspace Facts
 
@@ -19,7 +19,7 @@
 - Runtime package name is `@datahouse/runtime`.
 - The `datahouse` CLI lives in `packages/datahouse` (`bin`: `dist/cli.mjs`); commands are split into `src/commands/{command}.ts`.
 - CLI default config discovery checks `index.js`, `index.ts`, `src/index.js`, then `src/index.ts`.
-- The published package is `datahouse`; it builds with `tsdown` (`packages/datahouse/tsdown.config.ts`), emits library entries and `dist/cli.mjs`, copies `@datahouse/runtime/migrations` into `dist/migrations`, and copies the built studio app from `../studio/dist` into `dist/studio`. Do **not** list `@datahouse/studio` as a `workspace:*` devDependency—`bun publish` cannot resolve workspace versions for private packages; instead map `@datahouse/studio/server` via `tsconfig` paths to `../studio/src` (build studio before `datahouse` when packaging).
+- The published package is `datahouse`; it builds with `tsdown` (`packages/datahouse/tsdown.config.ts`), emits library entries and `dist/cli.mjs`, copies `@datahouse/runtime/migrations` into `dist/migrations`, copies `@electric-sql/pglite/dist/pglite.data` and `pglite.wasm` next to `cli.mjs` (PGlite loads them via `import.meta.url`), and copies the built studio app from `../studio/dist` into `dist/studio`. Do **not** list `@datahouse/studio` as a `workspace:*` devDependency—`bun publish` cannot resolve workspace versions for private packages; instead map `@datahouse/studio/server` via `tsconfig` paths to `../studio/src` (build studio before `datahouse` when packaging).
 - Runtime server is Elysia-based: loads config and runs DB migrations on startup; task scheduling uses bunqueue (embedded or TCP to a bunqueue server); default HTTP port is `2510` (`datahouse serve` / `startServer`). Studio UI is bundled under `dist/studio`; `datahouse studio` defaults to port `2511`.
 - Runtime route plugins live under `packages/runtime/src/routes/`; HTTP API is mounted under `/api` (extractors, sources, records, runs, etc.).
 - Runtime database: Drizzle with PostgreSQL when `DATABASE_URL` is set; otherwise embedded PGlite with data under `DATA_DIR/pglite`; migrations ship in `packages/runtime/migrations/` and are driven by `packages/runtime/drizzle.config.ts`.

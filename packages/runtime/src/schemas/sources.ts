@@ -3,10 +3,10 @@ import {
   text,
   timestamp,
   varchar,
-  jsonb,
   unique,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { superjsonb } from "./superjsonb";
 
 export const sources = pgTable(
   "sources",
@@ -16,8 +16,8 @@ export const sources = pgTable(
       .primaryKey(),
     extractorId: text("extractor_id").notNull(),
     key: text("key").notNull(),
-    config: jsonb("config"),
-    cursor: jsonb("cursor"),
+    config: superjsonb("config"),
+    cursor: superjsonb("cursor"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [unique("sources_extractor_id_key_unq").on(t.extractorId, t.key)],

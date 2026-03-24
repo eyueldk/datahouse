@@ -1,4 +1,4 @@
-import { createTransformer } from "datahouse";
+import { createTransformer } from "datahouse/core";
 import { booksCollection } from "../collections/books";
 import { wikidataExtractor } from "../extractors/wikidata";
 import type { WikidataBookBinding } from "../extractors/wikidata";
@@ -48,11 +48,15 @@ export const wikidataTransformer = createTransformer({
       source: "Wikidata",
     };
 
-    await emit("books", [
-      {
-        key: unifiedBook.id,
-        data: unifiedBook,
-      },
-    ]);
+    await emit({
+      collection: "books",
+      items: [
+        {
+          key: unifiedBook.id,
+          data: unifiedBook,
+        },
+      ],
+    });
   },
 });
+

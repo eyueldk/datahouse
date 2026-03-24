@@ -26,20 +26,20 @@ export function createFSBackend(options: FSBackendOptions): FilesBackend {
   return createFilesBackend({
     async write(
       key: string,
-      data: Blob | ArrayBuffer,
+      data: Blob | Buffer,
       opts?: FilesWriteOptions,
     ): Promise<void> {
       const path = getPath(key);
       mkdirSync(dirname(path), { recursive: true });
       const payload =
-        opts?.mimeType != null && data instanceof ArrayBuffer
+        opts?.mimeType != null && Buffer.isBuffer(data)
           ? new Blob([data], { type: opts.mimeType })
           : data;
       await Bun.write(path, payload);
     },
 
-    async read(key: string): Promise<ArrayBuffer> {
-      return await Bun.file(getPath(key)).arrayBuffer();
+    async read(key: string): Promise<Buffer> {
+      return Buffer.from(await Bun.file(getPath(key)).arrayBuffer());
     },
 
     async delete(key: string): Promise<void> {

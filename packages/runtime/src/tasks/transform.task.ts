@@ -58,7 +58,7 @@ export const transformTask = taskBackend.register<
           const { content } = await downloadFile({ id: params.id });
           return content;
         },
-        emit: async (collection, items) => {
+        emit: async ({ collection, items }) => {
           if (items.length === 0) {
             return;
           }
