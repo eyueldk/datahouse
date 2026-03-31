@@ -4,17 +4,18 @@ import { runs } from "./runs";
 import { sources } from "./sources";
 import { superjsonb } from "./superjsonb";
 
-export const bronzeRecords = pgTable("bronze_records", {
+export const datalake = pgTable("datalake", {
   id: varchar("id")
-    .$defaultFn(() => `brz_${nanoid()}`)
+    .$defaultFn(() => `dlk_${nanoid()}`)
     .primaryKey(),
   runId: varchar("run_id")
     .notNull()
-    .references(() => runs.id),
+    .references(() => runs.id, { onDelete: "cascade" }),
   sourceId: varchar("source_id")
     .notNull()
-    .references(() => sources.id),
-  key: text("key").notNull(),
+    .references(() => sources.id, { onDelete: "cascade" }),
+  extractorId: text("extractor_id").notNull(),
+  key: text("key").notNull().unique(),
   data: superjsonb("data").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

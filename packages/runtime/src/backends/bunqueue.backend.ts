@@ -5,16 +5,16 @@ import type {
   WorkerOptions,
 } from "bunqueue/client";
 import {
-  createTaskBackend,
-  type RegisterTaskParams,
-  type Task,
-  type TaskBackend,
-} from "../lib/task-backend";
+  createQueueBackend,
+  type QueueBackend,
+  type RegisterQueueParams,
+  type RegisteredQueue,
+} from "../lib/queue-backend";
 
 export type { ConnectionOptions } from "bunqueue/client";
 
 /** Job name used for both `enqueue` adds and scheduler templates (see bunqueue Queue API). */
-const TASK_JOB_NAME = "task";
+const QUEUE_JOB_NAME = "task";
 
 /**
  * How this backend talks to bunqueue: in-process embedded mode or TCP to a server.
@@ -25,21 +25,21 @@ export type BunqueueBackendOptions =
   | { connection: ConnectionOptions };
 
 /**
- * {@link TaskBackend} adapter backed by [bunqueue](https://www.npmjs.com/package/bunqueue)
+ * {@link QueueBackend} adapter backed by [bunqueue](https://www.npmjs.com/package/bunqueue)
  * (`Queue`, `Worker`, job schedulers). Requires the Bun runtime.
  */
 export function createBunqueueBackend(
   options: BunqueueBackendOptions = { embedded: true },
-): TaskBackend {
+): QueueBackend {
   const clientOptions: QueueOptions & WorkerOptions =
     "connection" in options
       ? { connection: options.connection }
       : { embedded: true };
 
-  return createTaskBackend({
+  return createQueueBackend({
     register<TData, TResult>(
-      params: RegisterTaskParams<TData, TResult>,
-    ): Task<TData, TResult> {
+      params: RegisterQueueParams<TData, TResult>,
+    ): RegisteredQueue<TData, TResult> {
       const { name, execute } = params;
 
       const queue = new Queue<TData>(name, { ...clientOptions });
@@ -51,7 +51,7 @@ export function createBunqueueBackend(
 
       return {
         async enqueue({ data }) {
-          await queue.add(TASK_JOB_NAME, data);
+          await queue.add(QUEUE_JOB_NAME, data);
         },
 
         async schedule({ key, cron, data }) {

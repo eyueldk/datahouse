@@ -1,1 +1,3 @@
-export * from "@datahouse/client";
+import { createClient } from "@datahouse/client";
+
+export { createClient };

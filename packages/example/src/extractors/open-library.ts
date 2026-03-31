@@ -24,16 +24,7 @@ interface OpenLibrarySearchResponse {
   docs?: OpenLibraryBook[];
 }
 
-interface OpenLibraryExtractorConfig {
-  query: string;
-  limit: number;
-}
-
-export const openLibraryExtractor = createExtractor<
-  OpenLibraryBook,
-  OpenLibraryExtractorConfig,
-  OpenLibraryExtractorConfig
->({
+export const openLibraryExtractor = createExtractor({
   id: "open-library-extractor",
   cron: "0 * * * *",
   config: {
@@ -46,7 +37,7 @@ export const openLibraryExtractor = createExtractor<
       config: input,
     }),
   },
-  async extract({ config, emit }) {
+  async *extract({ config }) {
     const params = new URLSearchParams({
       q: config.query,
       limit: String(config.limit),
@@ -66,12 +57,11 @@ export const openLibraryExtractor = createExtractor<
     const payload = (await response.json()) as OpenLibrarySearchResponse;
     const docs = payload.docs ?? [];
 
-    await emit({
+    yield {
       items: docs.map((doc, index) => ({
         key: doc.key ?? `open-library-${index}`,
         data: doc,
       })),
-    });
+    };
   },
 });
-

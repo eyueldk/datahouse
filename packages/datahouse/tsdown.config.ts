@@ -1,21 +1,18 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/core.ts", "src/client.ts", "src/cli.ts"],
+  entry: [
+    "src/index.ts",
+    "src/core.ts",
+    "src/client.ts",
+    "src/cli.ts",
+  ],
   format: "esm",
   outDir: "dist",
-  dts: { eager: true },
+  dts: true,
   clean: true,
   sourcemap: true,
   platform: "node",
-  deps: {
-    neverBundle: [
-      "zod"
-    ],
-    alwaysBundle: [
-      /^@datahouse/
-    ]
-  },
   copy: [
     { from: "node_modules/@datahouse/runtime/migrations", to: "dist" },
     { from: "node_modules/@datahouse/studio/dist", to: "dist", rename: "studio" },

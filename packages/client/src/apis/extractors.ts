@@ -1,5 +1,6 @@
-import type { TreatyClient } from "../internal/treaty";
-import { unwrapData } from "../internal/result";
+import { paginate, unwrapData } from "../utils";
+import type { TreatyClient } from "../utils/treaty.ts";
+import type { PaginatedResponse } from "../types";
 
 export interface ExtractorInfo {
   id: string;
@@ -7,44 +8,35 @@ export interface ExtractorInfo {
   schema: unknown;
 }
 
-export function createExtractorsApi(params: { client: TreatyClient }) {
-  const { client } = params;
-
-  const list = async (
-    params: {
+export interface ExtractorsClient {
+  list(
+    params?: {
       limit?: number;
       offset?: number;
-    } = {},
-  ) => {
-    const response = await client.api.extractors.get({
-      query: {
-        limit: params.limit,
-        offset: params.offset,
-      },
-    });
-    return unwrapData(response, "Failed to list extractors");
-  };
+    },
+  ): Promise<PaginatedResponse<ExtractorInfo>>;
+  pages(
+    params?: { limit?: number; offset?: number },
+  ): AsyncGenerator<PaginatedResponse<ExtractorInfo>, void, undefined>;
+}
 
+export function createExtractorsClient(client: unknown): ExtractorsClient {
+  const tc = client as TreatyClient;
   return {
-    list,
-
-    async *iterate(params: { limit?: number; offset?: number } = {}) {
-      const limit = params.limit;
-      let offset = params.offset ?? 0;
-
-      while (true) {
-        const page = await list({ limit, offset });
-        if (page.items.length === 0) {
-          break;
-        }
-        for (const item of page.items) {
-          yield item;
-        }
-        offset += page.items.length;
-        if (offset >= page.meta.total) {
-          break;
-        }
-      }
+    async list(params = {}) {
+      const response = await tc.api.extractors.get({
+        query: {
+          limit: params.limit,
+          offset: params.offset,
+        },
+      });
+      return unwrapData(response, "Failed to list extractors");
+    },
+    pages(params = {}) {
+      return paginate(
+        ({ limit, offset }) => this.list({ limit, offset }),
+        params,
+      );
     },
   };
 }

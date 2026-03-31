@@ -7,7 +7,17 @@
     "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@datahouse/client/types": ["../client/src/types.ts"],
+      "@datahouse/client/apis/extractions": [
+        "../client/src/apis/extractions.ts"
+      ],
+      "@datahouse/client/apis/transformations": [
+        "../client/src/apis/transformations.ts"
+      ],
+      "@datahouse/client/apis/extractors": [
+        "../client/src/apis/extractors.ts"
+      ]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],

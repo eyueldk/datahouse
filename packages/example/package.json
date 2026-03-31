@@ -8,9 +8,9 @@
     "studio": "datahouse studio"
   },
   "dependencies": {
+    "@datahouse/client": "workspace:*",
     "datahouse": "workspace:*",
-    "wikibase-sdk": "^10.2.1",
-    "zod": "^4.1.11"
+    "wikibase-sdk": "^10.2.1"
   },
   "devDependencies": {
     "@types/bun": "latest"

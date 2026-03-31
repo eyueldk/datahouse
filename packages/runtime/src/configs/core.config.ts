@@ -1,6 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { resolve, isAbsolute } from "node:path";
-import type { DataHouse, AnyPipeline } from "@datahouse/core";
+import type { Datahouse, AnyPipeline } from "@datahouse/core";
 
 function toFileUrl(path: string): string {
   const absolute = isAbsolute(path) ? path : resolve(process.cwd(), path);
@@ -14,7 +14,7 @@ export interface ConfigureOptions {
 
 async function load(
   options: ConfigureOptions,
-): Promise<DataHouse<AnyPipeline[]>> {
+): Promise<Datahouse<AnyPipeline[]>> {
   const { configPath } = options;
   const url = toFileUrl(configPath);
   let mod: unknown;
@@ -22,21 +22,21 @@ async function load(
     mod = await import(url);
   } catch (error) {
     throw new Error(
-      `Failed to import DataHouse config from "${configPath}": ${String(error)}`,
+      `Failed to import Datahouse config from "${configPath}": ${String(error)}`,
     );
   }
 
   const maybeConfig = (mod as { default?: unknown }).default ?? mod;
   if (!maybeConfig || typeof maybeConfig !== "object") {
     throw new Error(
-      `Config module "${configPath}" does not have a valid default export. Expected a DataHouse config.`,
+      `Config module "${configPath}" does not have a valid default export. Expected a Datahouse config.`,
     );
   }
 
-  return maybeConfig as DataHouse<AnyPipeline[]>;
+  return maybeConfig as Datahouse<AnyPipeline[]>;
 }
 
-let config!: DataHouse<AnyPipeline[]>;
+let config!: Datahouse<AnyPipeline[]>;
 
 export async function configure(options: ConfigureOptions): Promise<void> {
   config = await load(options);

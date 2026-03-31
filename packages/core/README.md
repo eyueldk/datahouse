@@ -1,108 +1,44 @@
 # @datahouse/core
 
-Framework-agnostic ETL primitives: extractors (batch streaming), transformers, loaders, and pipeline config.
+**Not published.** This workspace exists for monorepo organization only. Apps install **`datahouse`** and import from **`datahouse/core`**.
 
-## defineConfig
+Framework-agnostic ETL primitives: extractors (async generators), transformers, collections, and the root **Datahouse** object (`datahouse.ts`).
 
-The core entry point is **`defineConfig`**. It builds a typed DataHouse config from an array of pipelines. Pass that config to adapters (e.g. runners, job queues) to execute your ETL.
+## Root config: `createDatahouse`
+
+The core entry point is **`createDatahouse`** (see `src/datahouse.ts`). It wraps your pipelines in a typed **`Datahouse`** value. Pass that to the runtime or other adapters.
 
 ```ts
 import {
-  defineConfig,
+  createDatahouse,
   createPipeline,
   createExtractor,
   createTransformer,
-  createLoader,
 } from "@datahouse/core";
 
-const config = defineConfig({
-  pipelines: [
-    createPipeline(myExtractor, myTransformer, myLoader),
-    // more pipelines...
-  ],
+export default createDatahouse({
+  pipelines: [createPipeline(myExtractor, myTransformer)],
 });
-
-// config.pipelines is a typed tuple of your pipelines
 ```
 
 ## Building a pipeline
 
-Each pipeline is **extract → transform → load**. Use `createPipeline(extractor, transformer, loader)` to wire the three together.
+Each pipeline is **extract → transform**. Use `createPipeline(extractor, transformer)`.
 
 ### Extractor
 
-An extractor pulls data in batches and defines a **cron** schedule for when to run. It receives `{ config, cursor? }` and **yields** `{ cursor?, items: { key, data }[] }`.
+An extractor pulls data in batches. It receives `{ config, cursor?, upload, download }` and **yields** `{ items: { key, data }[]; cursor? }`.
 
-Extractor **config** (for source creation / validation) is always:
+Extractor **config** (for source creation / validation) is:
 
-- `{ schema: z.ZodType<TInput>, create: (input: TInput) => { key: string, config: TConfig } | Promise<{ key: string, config: TConfig }> }`
+- `{ schema: z.ZodType<TInput>, create: (input: TInput) => { key: string, config: TConfig } | Promise<...> }`
 - `schema` validates source input
-- `create` must return a deterministic source identity (`key`) and normalized runtime config (`config`)
-
-```ts
-const myExtractor = createExtractor<MyData, MyConfig, MyCursor>({
-  id: "my-extractor",
-  cron: "0 * * * *", // hourly (adapter-specific)
-  config: {
-    schema: myConfigSchema,
-    create: async (input) => ({
-      key: `my-extractor:${input.accountId}`,
-      config: input,
-    }),
-  },
-  extract: async function* ({ config, cursor }) {
-    let next = cursor;
-    do {
-      const result = await fetchPage(config, next);
-      yield { cursor: result.nextCursor, items: result.items };
-      next = result.nextCursor;
-    } while (next);
-  },
-});
-```
+- `create` returns a deterministic source identity (`key`) and normalized runtime config (`config`)
 
 ### Transformer
 
-A transformer takes a single item and yields transformed batches. It receives `{ data: TInput }` and **yields** `{ items: { key, data }[] }` (one transformation can return many results).
+A transformer receives bronze **`data`** (plus `upload` / `download`) and **yields** **`TransformBatch`** chunks: `{ collection, items }` per collection—same async-generator pattern as **`ExtractBatch`** on the extractor side. The function type is **`TransformGeneratorFunction`** (mirrors **`ExtractGeneratorFunction`**).
 
-```ts
-const myTransformer = createTransformer<RawItem, NormalizedItem>({
-  id: "my-transformer",
-  transform: async function* ({ data }) {
-    const items = [
-      {
-        key: data.id,
-        data: normalize(data),
-      },
-    ];
-    yield { items };
-  },
-});
-```
+### Wiring with `createPipeline`
 
-### Loader
-
-A loader describes **where** the pipeline writes (e.g. a table or topic). It has an `id` and a `target` string; the actual write is done by adapters.
-
-```ts
-const myLoader = createLoader({
-  id: "auctions-loader",
-  target: "auctions",
-});
-```
-
-### Wiring with createPipeline
-
-`createPipeline` takes (extractor, transformer, loader). The extractor’s output type must match the transformer’s input type.
-
-```ts
-createPipeline(myExtractor, myTransformer, myLoader);
-```
-
-Put one or more of these in `defineConfig({ pipelines: [...] })` to get your typed config.
-
-## Install
-
-```bash
-bun install
-```
+`createPipeline(extractor, transformer)`. The extractor’s emitted item type must match the transformer’s input type.

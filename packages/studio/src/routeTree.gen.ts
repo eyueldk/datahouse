@@ -11,8 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as RunsRouteImport } from './routes/runs'
-import { Route as RecordsRouteImport } from './routes/records'
 import { Route as ExtractorsRouteImport } from './routes/extractors'
+import { Route as DatawarehouseRouteImport } from './routes/datawarehouse'
+import { Route as DatalakeRouteImport } from './routes/datalake'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SourcesRoute = SourcesRouteImport.update({
@@ -25,14 +26,19 @@ const RunsRoute = RunsRouteImport.update({
   path: '/runs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RecordsRoute = RecordsRouteImport.update({
-  id: '/records',
-  path: '/records',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ExtractorsRoute = ExtractorsRouteImport.update({
   id: '/extractors',
   path: '/extractors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatawarehouseRoute = DatawarehouseRouteImport.update({
+  id: '/datawarehouse',
+  path: '/datawarehouse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatalakeRoute = DatalakeRouteImport.update({
+  id: '/datalake',
+  path: '/datalake',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,38 +49,61 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/datalake': typeof DatalakeRoute
+  '/datawarehouse': typeof DatawarehouseRoute
   '/extractors': typeof ExtractorsRoute
-  '/records': typeof RecordsRoute
   '/runs': typeof RunsRoute
   '/sources': typeof SourcesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/datalake': typeof DatalakeRoute
+  '/datawarehouse': typeof DatawarehouseRoute
   '/extractors': typeof ExtractorsRoute
-  '/records': typeof RecordsRoute
   '/runs': typeof RunsRoute
   '/sources': typeof SourcesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/datalake': typeof DatalakeRoute
+  '/datawarehouse': typeof DatawarehouseRoute
   '/extractors': typeof ExtractorsRoute
-  '/records': typeof RecordsRoute
   '/runs': typeof RunsRoute
   '/sources': typeof SourcesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/extractors' | '/records' | '/runs' | '/sources'
+  fullPaths:
+    | '/'
+    | '/datalake'
+    | '/datawarehouse'
+    | '/extractors'
+    | '/runs'
+    | '/sources'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/extractors' | '/records' | '/runs' | '/sources'
-  id: '__root__' | '/' | '/extractors' | '/records' | '/runs' | '/sources'
+  to:
+    | '/'
+    | '/datalake'
+    | '/datawarehouse'
+    | '/extractors'
+    | '/runs'
+    | '/sources'
+  id:
+    | '__root__'
+    | '/'
+    | '/datalake'
+    | '/datawarehouse'
+    | '/extractors'
+    | '/runs'
+    | '/sources'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DatalakeRoute: typeof DatalakeRoute
+  DatawarehouseRoute: typeof DatawarehouseRoute
   ExtractorsRoute: typeof ExtractorsRoute
-  RecordsRoute: typeof RecordsRoute
   RunsRoute: typeof RunsRoute
   SourcesRoute: typeof SourcesRoute
 }
@@ -95,18 +124,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RunsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/records': {
-      id: '/records'
-      path: '/records'
-      fullPath: '/records'
-      preLoaderRoute: typeof RecordsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/extractors': {
       id: '/extractors'
       path: '/extractors'
       fullPath: '/extractors'
       preLoaderRoute: typeof ExtractorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/datawarehouse': {
+      id: '/datawarehouse'
+      path: '/datawarehouse'
+      fullPath: '/datawarehouse'
+      preLoaderRoute: typeof DatawarehouseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/datalake': {
+      id: '/datalake'
+      path: '/datalake'
+      fullPath: '/datalake'
+      preLoaderRoute: typeof DatalakeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -121,8 +157,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DatalakeRoute: DatalakeRoute,
+  DatawarehouseRoute: DatawarehouseRoute,
   ExtractorsRoute: ExtractorsRoute,
-  RecordsRoute: RecordsRoute,
   RunsRoute: RunsRoute,
   SourcesRoute: SourcesRoute,
 }

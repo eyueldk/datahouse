@@ -4,47 +4,33 @@ import { runs, type RunType } from "../schemas/runs";
 
 const { db } = dbBackend;
 
-export async function createRun({ type }: { type: RunType }) {
-  const [run] = await db
+export async function createRun(params: { type: RunType }) {
+  const [row] = await db
     .insert(runs)
-    .values({ type, status: "running" })
+    .values({ type: params.type, status: "running" })
     .returning();
-  if (!run) {
+  if (!row) {
     throw new Error("Failed to create run");
   }
-  return run;
+  return row;
 }
 
-export async function completeRun({ runId }: { runId: string }) {
+export async function completeRun(params: { runId: string }) {
   await db
     .update(runs)
     .set({ status: "completed", completedAt: new Date() })
-    .where(eq(runs.id, runId));
+    .where(eq(runs.id, params.runId));
 }
 
-export async function failRun({
-  runId,
-  error,
-}: {
-  runId: string;
-  error: string;
-}) {
+export async function failRun(params: { runId: string; error: string }) {
   await db
     .update(runs)
-    .set({ status: "failed", error, completedAt: new Date() })
-    .where(eq(runs.id, runId));
-}
-
-export async function listRuns(params: { type?: RunType } = {}) {
-  let query = db
-    .select()
-    .from(runs)
-    .orderBy(desc(runs.startedAt), desc(runs.id))
-    .$dynamic();
-  if (params.type) {
-    query = query.where(eq(runs.type, params.type));
-  }
-  return await query;
+    .set({
+      status: "failed",
+      error: params.error,
+      completedAt: new Date(),
+    })
+    .where(eq(runs.id, params.runId));
 }
 
 export async function paginateRuns(params: {
@@ -55,23 +41,18 @@ export async function paginateRuns(params: {
   const limit = Math.max(1, params.limit);
   const offset = Math.max(0, params.offset);
 
-  let itemsQuery = db
-    .select()
-    .from(runs)
-    .orderBy(desc(runs.startedAt), desc(runs.id))
-    .$dynamic();
-  let countQuery = db
-    .select({ total: sql<number>`count(*)` })
-    .from(runs)
-    .$dynamic();
-  if (params.type) {
-    const filter = eq(runs.type, params.type);
-    itemsQuery = itemsQuery.where(filter);
-    countQuery = countQuery.where(filter);
-  }
+  const whereClause =
+    params.type !== undefined ? eq(runs.type, params.type) : undefined;
+
+  const itemsBase = db.select().from(runs);
+  const countBase = db.select({ total: sql<number>`count(*)` }).from(runs);
+
   const [items, totalRows] = await Promise.all([
-    itemsQuery.limit(limit).offset(offset),
-    countQuery,
+    (whereClause ? itemsBase.where(whereClause) : itemsBase)
+      .orderBy(desc(runs.startedAt), desc(runs.id))
+      .limit(limit)
+      .offset(offset),
+    whereClause ? countBase.where(whereClause) : countBase,
   ]);
   return {
     items,
@@ -80,10 +61,10 @@ export async function paginateRuns(params: {
 }
 
 export async function findRun(params: { id: string }) {
-  const [run] = await db
+  const [row] = await db
     .select()
     .from(runs)
     .where(eq(runs.id, params.id))
     .limit(1);
-  return run;
+  return row;
 }

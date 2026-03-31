@@ -1,7 +1,8 @@
 import { Elysia, t } from "elysia";
 import { config } from "../configs/core.config";
-import { extractTask } from "../tasks";
-import { setupExtractCronJob } from "../services/tasks.service";
+import { extractQueue } from "../queues";
+import { setupExtractCronJob } from "../services/queues.service";
+import { createRun } from "../services/run.service";
 import {
   createSource,
   deleteSource,
@@ -51,7 +52,7 @@ const SourceParamsRequest = t.Object({
   id: t.String(),
 });
 
-const TriggerSourceResponse = t.Object({
+const ExtractSourceResponse = t.Object({
   sourceId: t.String(),
   jobId: t.String(),
 });
@@ -195,14 +196,17 @@ export const sourceRoutes = new Elysia()
     },
   )
   .post(
-    "/sources/:id/trigger",
+    "/sources/:id/extract",
     async ({ params: { id }, status }) => {
       try {
         const source = await findSource({ id });
-        await extractTask.enqueue({ data: { sourceId: source.id } });
+        const run = await createRun({ type: "extract" });
+        await extractQueue.enqueue({
+          data: { sourceId: source.id, runId: run.id },
+        });
         return status(200, {
           sourceId: source.id,
-          jobId: "unknown",
+          jobId: run.id,
         });
       } catch {
         return status(404, { error: `Source ${id} not found.` });
@@ -211,7 +215,7 @@ export const sourceRoutes = new Elysia()
     {
       params: SourceParamsRequest,
       response: {
-        200: TriggerSourceResponse,
+        200: ExtractSourceResponse,
         404: ErrorResponse,
       },
     },

@@ -1,55 +1,67 @@
 import type { z } from "zod";
-import type { AnyCollection } from "./collection";
-import type { Extractor } from "./extractor";
+import type { AnyCollection, ZodSchema } from "./collection";
+import type { AnyExtractor, Extractor, ExtractorData } from "./extractor";
 import type { UploadedFile } from "./file";
 
+/** Flattens object types for cleaner tooltips (no nested intersections). */
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+/** Row shape for a collection (Zod schema output). */
 export type CollectionData<
   TCollection extends AnyCollection,
   TId extends string,
-> = TCollection extends { id: TId; schema: infer TSchema extends z.ZodType }
-  ? z.infer<TSchema>
-  : never;
+> = [Extract<TCollection, { id: TId }>] extends [never]
+  ? never
+  : Prettify<z.infer<Extract<TCollection, { id: TId }>["schema"]>>;
 
-export type EmitTransformFn<TCollection extends AnyCollection> = <
-  TId extends TCollection["id"],
->(params: {
-  collection: TId;
-  items: Array<{ key: string; data: CollectionData<TCollection, TId> }>;
-}) => Promise<void>;
+/**
+ * One chunk yielded by a transform (per collection). Mirrors {@link ExtractBatch} on the extractor side.
+ */
+export type TransformBatch<TCollection extends AnyCollection> = {
+  [K in TCollection["id"]]: {
+    collection: K;
+    items: Array<{ key: string; data: CollectionData<TCollection, K> }>;
+  };
+}[TCollection["id"]];
 
-export interface TransformContext<TInput, TCollection extends AnyCollection> {
+export interface TransformContext<TInput> {
   data: TInput;
   upload: (params: {
-    content: File | Blob | Buffer;
+    content: Buffer;
     name?: string;
     mimeType?: string;
   }) => Promise<UploadedFile>;
   download: (params: { id: string }) => Promise<Buffer>;
-  emit: EmitTransformFn<TCollection>;
 }
 
-type ExtractorData<TExtractor> =
-  TExtractor extends Extractor<infer TData, any, any, any> ? TData : never;
-
-export type TransformFunction<TInput, TCollection extends AnyCollection> = (
-  context: TransformContext<TInput, TCollection>,
-) => void | Promise<void>;
+export type TransformGeneratorFunction<
+  TInput,
+  TCollection extends AnyCollection = AnyCollection,
+> = (
+  context: TransformContext<TInput>,
+) => AsyncGenerator<TransformBatch<TCollection>, void, void>;
 
 export interface Transformer<TExtractor, TCollection extends AnyCollection> {
   id: string;
   extractor: TExtractor;
   collections: readonly TCollection[];
-  transform: TransformFunction<ExtractorData<TExtractor>, TCollection>;
+  transform: TransformGeneratorFunction<ExtractorData<TExtractor>, TCollection>;
 }
+
+/** Widened transformer for generic constraints (e.g. `AnyPipeline`). */
+export type AnyTransformer = Transformer<AnyExtractor, AnyCollection>;
 
 export interface CreateTransformerOptions<
   TExtractor,
-  TCollections extends readonly AnyCollection[],
+  TCollections extends readonly { id: string; schema: ZodSchema }[],
 > {
   id: string;
   extractor: TExtractor;
   collections: TCollections;
-  transform: TransformFunction<ExtractorData<TExtractor>, TCollections[number]>;
+  transform: TransformGeneratorFunction<
+    ExtractorData<TExtractor>,
+    TCollections[number]
+  >;
 }
 
 export function createTransformer<

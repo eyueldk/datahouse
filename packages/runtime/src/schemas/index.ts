@@ -1,44 +1,44 @@
 import { relations } from "drizzle-orm";
 import { sources } from "./sources";
 import { runs } from "./runs";
-import { bronzeRecords } from "./bronze-records";
-import { goldRecords } from "./gold-records";
+import { datalake } from "./datalake";
+import { datawarehouse } from "./datawarehouse";
 
 export { sources } from "./sources";
 export { runs, type RunType, type RunStatus } from "./runs";
-export { bronzeRecords } from "./bronze-records";
-export { goldRecords } from "./gold-records";
+export { datalake } from "./datalake";
+export { datawarehouse } from "./datawarehouse";
+export { datawarehouseTombstones } from "./datawarehouse-tombstones";
 export { files } from "./files";
 
-// Relations (defined here to avoid circular imports across schema files)
 export const sourcesRelations = relations(sources, ({ many }) => ({
-  bronzeRecords: many(bronzeRecords),
+  datalakeRecords: many(datalake),
 }));
-
-export const bronzeRecordsRelations = relations(
-  bronzeRecords,
-  ({ one, many }) => ({
-    run: one(runs, { fields: [bronzeRecords.runId], references: [runs.id] }),
-    source: one(sources, {
-      fields: [bronzeRecords.sourceId],
-      references: [sources.id],
-    }),
-    goldRecords: many(goldRecords),
-  }),
-);
 
 export const runsRelations = relations(runs, ({ many }) => ({
-  bronzeRecords: many(bronzeRecords),
-  goldRecords: many(goldRecords),
+  datalakeRecords: many(datalake),
+  datawarehouseRecords: many(datawarehouse),
 }));
 
-export const goldRecordsRelations = relations(goldRecords, ({ one }) => ({
+export const datalakeRelations = relations(datalake, ({ one, many }) => ({
   run: one(runs, {
-    fields: [goldRecords.runId],
+    fields: [datalake.runId],
     references: [runs.id],
   }),
-  bronzeRecord: one(bronzeRecords, {
-    fields: [goldRecords.bronzeRecordId],
-    references: [bronzeRecords.id],
+  source: one(sources, {
+    fields: [datalake.sourceId],
+    references: [sources.id],
+  }),
+  datawarehouseRecords: many(datawarehouse),
+}));
+
+export const datawarehouseRelations = relations(datawarehouse, ({ one }) => ({
+  run: one(runs, {
+    fields: [datawarehouse.runId],
+    references: [runs.id],
+  }),
+  datalakeRecord: one(datalake, {
+    fields: [datawarehouse.datalakeId],
+    references: [datalake.id],
   }),
 }));

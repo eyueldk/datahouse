@@ -1,8 +1,8 @@
 {
   "name": "datahouse",
-  "version": "0.0.9",
+  "version": "0.0.18",
   "type": "module",
-  "description": "DataHouse framework",
+  "description": "Datahouse framework",
   "publishConfig": {
     "access": "public"
   },
@@ -34,18 +34,20 @@
   ],
   "scripts": {
     "build": "tsdown",
+    "dev": "tsdown --watch",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "cmd-ts": "^0.13.0"
+    "cmd-ts": "^0.13.0",
+    "zod": "4.3.5"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "tsdown": "^0.21.4",
-    "typescript": "^5.9.3",
     "@datahouse/client": "workspace:*",
     "@datahouse/core": "workspace:*",
-    "@datahouse/runtime": "workspace:*"
+    "@datahouse/runtime": "workspace:*",
+    "@types/bun": "latest",
+    "tsdown": "^0.21.4",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "typescript": "^5"

@@ -36,7 +36,7 @@ export const wikidataTransformer = createTransformer({
   id: "wikidata-transformer",
   extractor: wikidataExtractor,
   collections: [booksCollection],
-  async transform({ data, emit }) {
+  async *transform({ data }) {
     const entityId = extractEntityId(data.book?.value);
     const unifiedBook: UnifiedBook = {
       id: `wikidata:${entityId}`,
@@ -48,7 +48,7 @@ export const wikidataTransformer = createTransformer({
       source: "Wikidata",
     };
 
-    await emit({
+    yield {
       collection: "books",
       items: [
         {
@@ -56,7 +56,7 @@ export const wikidataTransformer = createTransformer({
           data: unifiedBook,
         },
       ],
-    });
+    };
   },
 });
 

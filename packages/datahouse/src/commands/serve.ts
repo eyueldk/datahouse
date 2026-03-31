@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { command, number, optional, option, positional, string } from "cmd-ts";
-import { DEFAULT_SERVER_PORT, startServer } from "@datahouse/runtime";
+import { startServer } from "@datahouse/runtime";
 
 const DEFAULT_CONFIG_FILES = [
   "index.js",
@@ -24,7 +24,7 @@ function getDefaultConfigPath(): string {
 
 export const serveCommand = command({
   name: "serve",
-  description: "Start the DataHouse server",
+  description: "Start the Datahouse server",
   args: {
     file: positional({
       type: optional(string),
@@ -35,7 +35,7 @@ export const serveCommand = command({
       type: number,
       long: "port",
       short: "p",
-      defaultValue: () => DEFAULT_SERVER_PORT,
+      defaultValue: () => 2510,
     }),
   },
   handler: async (args) => {

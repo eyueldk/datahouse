@@ -1,13 +1,11 @@
-import { Theme as ShadcnTheme } from "@rjsf/shadcn";
-import { withTheme } from "@rjsf/core";
-
-const Form = withTheme(ShadcnTheme);
-import validator from "@rjsf/validator-ajv8";
 import * as jsf from "json-schema-faker";
+import { Play } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { toastQueuedRun } from "#/lib/job-toast";
 import { type ColumnDef } from "@tanstack/react-table";
+import { JsonSchemaForm } from "#/components/json-schema-form";
 import { Button } from "#/components/ui/button";
 import {
   Card,
@@ -35,13 +33,12 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
+import {
+  parseJsonValue,
+  stringifyJson,
+  toJsonSchema,
+} from "#/lib/json-config";
 import { client } from "#/lib/client";
-
-type ExtractorItem = {
-  id: string;
-  cron?: string;
-  schema: unknown;
-};
 
 export const Route = createFileRoute("/sources")({
   loader: async () => {
@@ -51,7 +48,7 @@ export const Route = createFileRoute("/sources")({
     ]);
     return {
       sources: sourcesPayload.items,
-      extractors: extractorsPayload.items as ExtractorItem[],
+      extractors: extractorsPayload.items,
     };
   },
   component: SourcesPage,
@@ -61,7 +58,6 @@ function SourcesPage() {
   const router = useRouter();
   const { sources, extractors } = Route.useLoaderData();
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"visual" | "json">("visual");
   const [statusError, setStatusError] = useState<string | null>(null);
 
   const getExtractorById = (extractorId: string) =>
@@ -76,6 +72,7 @@ function SourcesPage() {
     defaultValues: {
       extractorId: initialExtractorId,
       configJson: initialConfigJson,
+      editorMode: "visual" as "visual" | "json",
     },
     onSubmit: async ({ value }) => {
       setStatusError(null);
@@ -89,21 +86,19 @@ function SourcesPage() {
     },
   });
 
-  const [visualData, setVisualData] = useState<unknown>(
-    parseJsonValue(initialConfigJson),
-  );
-
-  const syncFromExtractor = (extractorId: string) => {
-    const nextConfigJson = createExampleJson(
-      getExtractorById(extractorId)?.schema,
-    );
-    form.setFieldValue("configJson", nextConfigJson);
-    setVisualData(parseJsonValue(nextConfigJson));
+  const resetFormForDialog = () => {
+    const id = extractors[0]?.id ?? "";
+    form.reset({
+      extractorId: id,
+      configJson: createExampleJson(getExtractorById(id)?.schema),
+      editorMode: "visual",
+    });
   };
 
-  const triggerSource = async (id: string) => {
+  const extractFromSource = async (id: string) => {
     setStatusError(null);
-    await client.sources.trigger({ id });
+    const result = await client.sources.extract({ id });
+    toastQueuedRun(router, result.jobId, "extract", "Extract run queued");
     await router.invalidate();
   };
 
@@ -112,10 +107,6 @@ function SourcesPage() {
     await client.sources.remove({ id });
     await router.invalidate();
   };
-
-  const selectedSchema = toJsonSchema(
-    getExtractorById(form.state.values.extractorId)?.schema,
-  );
 
   const columns: ColumnDef<any>[] = [
     {
@@ -141,11 +132,15 @@ function SourcesPage() {
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           <Button
+            type="button"
             variant="secondary"
-            size="sm"
-            onClick={() => void triggerSource(row.original.id)}
+            size="icon"
+            className="shrink-0"
+            aria-label="Run extraction for this source"
+            title="Run extraction"
+            onClick={() => void extractFromSource(row.original.id)}
           >
-            Trigger Run
+            <Play className="size-4" aria-hidden />
           </Button>
           <Button
             variant="destructive"
@@ -165,15 +160,15 @@ function SourcesPage() {
         <div>
           <CardTitle>Sources</CardTitle>
           <CardDescription>
-            Create sources and trigger extraction runs.
+            Create sources and enqueue extractions into the datalake.
           </CardDescription>
         </div>
         <Dialog
           open={open}
           onOpenChange={(nextOpen) => {
             setOpen(nextOpen);
-            if (nextOpen && form.state.values.extractorId) {
-              syncFromExtractor(form.state.values.extractorId);
+            if (nextOpen) {
+              resetFormForDialog();
             }
           }}
         >
@@ -200,9 +195,8 @@ function SourcesPage() {
                   });
                 }}
               >
-                <form.Field
-                  name="extractorId"
-                  children={(field) => (
+                <form.Field name="extractorId">
+                  {(field) => (
                     <div className="grid gap-2">
                       <Label htmlFor={field.name}>Extractor</Label>
                       <Select
@@ -210,7 +204,12 @@ function SourcesPage() {
                         onValueChange={(extractorId) => {
                           const nextExtractorId = extractorId ?? "";
                           field.handleChange(nextExtractorId);
-                          syncFromExtractor(nextExtractorId);
+                          form.setFieldValue(
+                            "configJson",
+                            createExampleJson(
+                              getExtractorById(nextExtractorId)?.schema,
+                            ),
+                          );
                         }}
                       >
                         <SelectTrigger id={field.name} className="w-full">
@@ -226,67 +225,69 @@ function SourcesPage() {
                       </Select>
                     </div>
                   )}
-                />
+                </form.Field>
 
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={mode === "visual" ? "default" : "secondary"}
-                    onClick={() => setMode("visual")}
-                  >
-                    Visual
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={mode === "json" ? "default" : "secondary"}
-                    onClick={() => setMode("json")}
-                  >
-                    JSON
-                  </Button>
-                </div>
+                <form.Field name="editorMode">
+                  {(field) => (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={
+                          field.state.value === "visual" ? "default" : "secondary"
+                        }
+                        onClick={() => field.handleChange("visual")}
+                      >
+                        Visual
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          field.state.value === "json" ? "default" : "secondary"
+                        }
+                        onClick={() => field.handleChange("json")}
+                      >
+                        JSON
+                      </Button>
+                    </div>
+                  )}
+                </form.Field>
 
-                {mode === "visual" ? (
-                  <div className="rounded-md border border-border p-3">
-                    <Form
-                      schema={selectedSchema}
-                      validator={validator}
-                      formData={visualData}
-                      onChange={(event: { formData?: unknown }) => {
-                        const nextData = event.formData ?? {};
-                        setVisualData(nextData);
-                        form.setFieldValue(
-                          "configJson",
-                          stringifyJson(nextData),
-                        );
-                      }}
-                    >
-                      <div />
-                    </Form>
-                  </div>
-                ) : (
-                  <form.Field
-                    name="configJson"
-                    children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Config JSON</Label>
-                        <Textarea
-                          id={field.name}
-                          rows={8}
-                          value={field.state.value}
-                          onChange={(event) => {
-                            const nextJson = event.target.value;
-                            field.handleChange(nextJson);
-                            try {
-                              setVisualData(parseJsonValue(nextJson));
-                            } catch {
-                              // Keep visual form state unchanged for invalid JSON input.
-                            }
-                          }}
-                        />
-                      </div>
-                    )}
-                  />
-                )}
+                <form.Subscribe
+                  selector={(state) =>
+                    [state.values.editorMode, state.values.extractorId] as const
+                  }
+                >
+                  {([editorMode, extractorId]) => {
+                    const selectedSchema = toJsonSchema(
+                      getExtractorById(extractorId)?.schema,
+                    );
+                    return (
+                      <form.Field name="configJson">
+                        {(field) =>
+                          editorMode === "visual" ? (
+                            <JsonSchemaForm
+                              schema={selectedSchema}
+                              valueJson={field.state.value}
+                              onChangeJson={(json) => field.handleChange(json)}
+                            />
+                          ) : (
+                            <div className="grid gap-2">
+                              <Label htmlFor={field.name}>Config JSON</Label>
+                              <Textarea
+                                id={field.name}
+                                rows={8}
+                                value={field.state.value}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                              />
+                            </div>
+                          )
+                        }
+                      </form.Field>
+                    );
+                  }}
+                </form.Subscribe>
 
                 <DialogFooter>
                   <Button type="submit" disabled={extractors.length === 0}>
@@ -306,33 +307,6 @@ function SourcesPage() {
       </CardContent>
     </Card>
   );
-}
-
-function parseJsonValue(raw: string): unknown {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return {};
-  }
-  return JSON.parse(trimmed);
-}
-
-function stringifyJson(value: unknown): string {
-  return JSON.stringify(value ?? {}, null, 2);
-}
-
-function isJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function toJsonSchema(schema: unknown): Record<string, unknown> {
-  if (isJsonObject(schema)) {
-    return schema;
-  }
-  return {
-    type: "object",
-    properties: {},
-    additionalProperties: true,
-  };
 }
 
 function createExampleJson(schema: unknown): string {

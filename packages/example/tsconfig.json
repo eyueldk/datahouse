@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@datahouse/client/types": ["../client/src/types.ts"]
+    },
     // Environment setup & latest features
     "lib": ["ESNext"],
     "target": "ESNext",

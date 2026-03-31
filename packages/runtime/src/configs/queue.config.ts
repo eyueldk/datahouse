@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createBunqueueBackend } from "../backends/bunqueue.backend";
-import type { TaskBackend } from "../lib/task-backend";
+import type { QueueBackend } from "../lib/queue-backend";
 
 const schema = z.object({
   BUNQUEUE_HOST: z.string().trim().min(1).optional(),
@@ -16,17 +16,17 @@ const env = schema.parse({
   BUNQUEUE_PORT: process.env.BUNQUEUE_PORT,
 });
 
-let taskBackend: TaskBackend;
+let queueBackend: QueueBackend;
 
 if (env.BUNQUEUE_HOST) {
-  taskBackend = createBunqueueBackend({
+  queueBackend = createBunqueueBackend({
     connection: {
       host: env.BUNQUEUE_HOST,
       port: env.BUNQUEUE_PORT,
     },
   });
 } else {
-  taskBackend = createBunqueueBackend({ embedded: true });
+  queueBackend = createBunqueueBackend({ embedded: true });
 }
 
-export { taskBackend };
+export { queueBackend };

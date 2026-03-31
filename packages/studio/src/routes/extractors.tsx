@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef } from "@tanstack/react-table";
+import type { ExtractorInfo } from "@datahouse/client/apis/extractors";
 import {
   Card,
   CardContent,
@@ -10,12 +11,7 @@ import {
 import { DataTable } from "#/components/ui/data-table";
 import { client } from "#/lib/client";
 
-type ExtractorItem = {
-  id: string;
-  cron?: string;
-};
-
-const columns: ColumnDef<ExtractorItem>[] = [
+const columns: ColumnDef<ExtractorInfo>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -47,7 +43,7 @@ function ExtractorsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <DataTable columns={columns} data={extractors as ExtractorItem[]} />
+        <DataTable columns={columns} data={extractors} />
       </CardContent>
     </Card>
   );

@@ -1,30 +1,25 @@
-import type { DataHouse } from "@datahouse/core";
-import { createTreatyClient } from "./internal/treaty";
-import { createExtractorsApi } from "./apis/extractors";
-import { createRecordsApi } from "./apis/records";
-import { createRunsApi } from "./apis/runs";
-import { createSourcesApi } from "./apis/sources";
+import type { AnyDatahouse } from "@datahouse/core";
+import {
+  createDatahouseClient,
+  type DatahouseClient,
+} from "./client";
 
-export { createExtractorsApi } from "./apis/extractors";
-export { createRecordsApi } from "./apis/records";
-export { createRunsApi } from "./apis/runs";
-export { createSourcesApi } from "./apis/sources";
+export type { DatahouseClient };
 
-export function createClient<TConfig extends DataHouse<unknown>>(params: {
-  domain: string;
-}) {
-  const client = createTreatyClient({ domain: params.domain });
-
-  return {
-    extractors: createExtractorsApi({ client }),
-    runs: createRunsApi({ client }),
-    sources: createSourcesApi({ client }),
-    records: createRecordsApi<TConfig>({ client }),
-  };
+/**
+ * Typed Datahouse HTTP client. Types follow your **Datahouse** config (collections + Zod schemas).
+ *
+ * **Inference (recommended):** pass your `createDatahouse({ pipelines: [...] })` result as `datahouse`
+ * so `client.datawarehouse.records({ collection: "books" })` narrows `page.items[].data` automatically.
+ *
+ * **Explicit generic:** `createClient<typeof myDatahouse>({ domain: "…" })` when you omit `datahouse`.
+ */
+export function createClient<const TDatahouse extends AnyDatahouse = AnyDatahouse>(
+  params: {
+    domain: string;
+    /** Pass the same object you gave `createDatahouse(...)` to infer collection ids and record payloads. */
+    datahouse?: TDatahouse;
+  },
+): DatahouseClient<TDatahouse> {
+  return createDatahouseClient<TDatahouse>({ domain: params.domain });
 }
-
-export type DatahouseClient<TConfig extends DataHouse<unknown>> = ReturnType<
-  typeof createClient<TConfig>
->;
-
-export type * from "./types";

@@ -22,20 +22,12 @@ interface WikidataSparqlResponse {
   };
 }
 
-interface WikidataExtractorConfig {
-  limit: number;
-}
-
 const wikidataSdk = wbk({
   instance: "https://www.wikidata.org",
   sparqlEndpoint: "https://query.wikidata.org/sparql",
 });
 
-export const wikidataExtractor = createExtractor<
-  WikidataBookBinding,
-  WikidataExtractorConfig,
-  WikidataExtractorConfig
->({
+export const wikidataExtractor = createExtractor({
   id: "wikidata-extractor",
   cron: "30 * * * *",
   config: {
@@ -47,7 +39,7 @@ export const wikidataExtractor = createExtractor<
       config: input,
     }),
   },
-  async extract({ config, emit }) {
+  async *extract({ config }) {
     const query = `
       PREFIX wd: <http://www.wikidata.org/entity/>
       PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -84,12 +76,11 @@ export const wikidataExtractor = createExtractor<
     const payload = (await response.json()) as WikidataSparqlResponse;
     const bindings = payload.results?.bindings ?? [];
 
-    await emit({
+    yield {
       items: bindings.map((binding, index) => ({
         key: binding.book?.value ?? `wikidata-book-${index}`,
         data: binding,
       })),
-    });
+    };
   },
 });
-

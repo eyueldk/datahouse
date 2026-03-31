@@ -1,48 +1,80 @@
-import type { DataHouse } from "@datahouse/core";
+import type { AnyDatahouse } from "@datahouse/core";
+import type { AnyCollection } from "@datahouse/core";
+import type { AnyPipeline } from "@datahouse/core";
 import type { z } from "zod";
 
-export type PipelineFromConfig<TConfig extends DataHouse<unknown>> =
-  TConfig["pipelines"] extends readonly (infer TPipeline)[] ? TPipeline : never;
+/** Flattens intersections so quick-info shows a single object shape. */
+export type Prettify<T> = { [K in keyof T]: T[K] } & {};
 
-export type CollectionFromPipeline<TPipeline> = TPipeline extends {
-  transformer: { collections: readonly (infer TCollection)[] };
-}
-  ? TCollection
-  : never;
+export type PipelineFromDatahouse<TDatahouse extends AnyDatahouse> =
+  TDatahouse["pipelines"][number];
 
-export type CollectionFromConfig<TConfig extends DataHouse<unknown>> =
-  CollectionFromPipeline<PipelineFromConfig<TConfig>>;
+export type CollectionFromPipeline<
+  TPipeline extends AnyPipeline,
+> = TPipeline["transformer"]["collections"][number];
 
-export type CollectionIdFromConfig<TConfig extends DataHouse<unknown>> =
-  CollectionFromConfig<TConfig> extends { id: infer TId extends string }
-    ? TId
-    : never;
+export type CollectionFromDatahouse<TDatahouse extends AnyDatahouse> =
+  CollectionFromPipeline<PipelineFromDatahouse<TDatahouse>>;
+
+export type CollectionIdFromDatahouse<TDatahouse extends AnyDatahouse> =
+  CollectionFromDatahouse<TDatahouse>["id"];
+
+export type CollectionIdFromCollection<TCollection extends AnyCollection> =
+  TCollection["id"];
+
+export type CollectionByIdFromCollection<
+  TCollection extends AnyCollection,
+  TCollectionId extends CollectionIdFromCollection<TCollection>,
+> = Extract<TCollection, { id: TCollectionId }>;
+
+export type CollectionDataByIdFromCollection<
+  TCollection extends AnyCollection,
+  TCollectionId extends CollectionIdFromCollection<TCollection>,
+> = [CollectionByIdFromCollection<TCollection, TCollectionId>] extends [never]
+  ? never
+  : Prettify<
+      z.infer<
+        CollectionByIdFromCollection<TCollection, TCollectionId>["schema"]
+      >
+    >;
 
 export type CollectionById<
-  TConfig extends DataHouse<unknown>,
-  TCollectionId extends CollectionIdFromConfig<TConfig>,
-> = Extract<CollectionFromConfig<TConfig>, { id: TCollectionId }>;
+  TDatahouse extends AnyDatahouse,
+  TCollectionId extends CollectionIdFromDatahouse<TDatahouse>,
+> = Extract<CollectionFromDatahouse<TDatahouse>, { id: TCollectionId }>;
 
 export type CollectionDataById<
-  TConfig extends DataHouse<unknown>,
-  TCollectionId extends CollectionIdFromConfig<TConfig>,
-> =
-  CollectionById<TConfig, TCollectionId> extends {
-    schema: infer TSchema extends z.ZodType;
-  }
-    ? z.infer<TSchema>
-    : never;
+  TDatahouse extends AnyDatahouse,
+  TCollectionId extends CollectionIdFromDatahouse<TDatahouse>,
+> = [CollectionById<TDatahouse, TCollectionId>] extends [never]
+  ? never
+  : Prettify<z.infer<CollectionById<TDatahouse, TCollectionId>["schema"]>>;
 
-export interface RecordRow<TData, TCollectionId extends string> {
+export type DatawarehouseRecord<
+  TCollectionData,
+  TCollectionId extends string,
+> = Prettify<{
   id: string;
   runId: string;
-  bronzeRecordId: string;
+  datalakeId: string;
   transformerId: string;
   collection: TCollectionId;
   key: string;
-  data: TData;
+  data: TCollectionData;
   createdAt: Date;
-}
+  updatedAt: Date;
+}>;
+
+/** Raw extracted record in the datalake (not tied to a typed collection). */
+export type DatalakeRecord = Prettify<{
+  id: string;
+  runId: string;
+  sourceId: string;
+  extractorId: string;
+  key: string;
+  data: unknown;
+  createdAt: Date;
+}>;
 
 export interface PaginationMeta {
   offset: number;
@@ -50,7 +82,14 @@ export interface PaginationMeta {
   total: number;
 }
 
-export interface PaginatedResponse<TItem> {
-  items: TItem[];
+/** Page of API items, e.g. `PaginatedResponse<DatawarehouseRecord<…, "your-collection-id">>`. */
+export type PaginatedResponse<TItem> = {
+  items: Prettify<TItem>[];
   meta: PaginationMeta;
-}
+};
+
+/** Row shape for `PaginatedResponse<DatawarehouseTombstone>` from tombstones endpoint. */
+export type DatawarehouseTombstone = Prettify<{
+  key: string;
+  deletedAt: Date;
+}>;

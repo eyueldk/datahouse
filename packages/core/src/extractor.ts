@@ -1,26 +1,29 @@
 import type { z } from "zod";
 import type { UploadedFile } from "./file";
 
-export type EmitExtractFn<TData, TCursor = unknown> = (params: {
+export type ExtractBatch<TData, TCursor = unknown> = {
   items: Array<{ key: string; data: TData }>;
   cursor?: TCursor;
-}) => Promise<void>;
+};
 
-export interface ExtractContext<TData, TConfig = unknown, TCursor = unknown> {
+export interface ExtractContext<TConfig = unknown, TCursor = unknown> {
   config: TConfig;
   cursor?: TCursor;
   upload: (params: {
-    content: File | Blob | Buffer;
+    content: Buffer;
     name?: string;
     mimeType?: string;
   }) => Promise<UploadedFile>;
   download: (params: { id: string }) => Promise<Buffer>;
-  emit: EmitExtractFn<TData, TCursor>;
 }
 
-export type ExtractFunction<TData, TConfig = unknown, TCursor = unknown> = (
-  context: ExtractContext<TData, TConfig, TCursor>,
-) => void | Promise<void>;
+export type ExtractGeneratorFunction<
+  TData,
+  TConfig = unknown,
+  TCursor = unknown,
+> = (
+  context: ExtractContext<TConfig, TCursor>,
+) => AsyncGenerator<ExtractBatch<TData, TCursor>, void, void>;
 
 export interface ExtractorCreateResult<TConfig> {
   key: string;
@@ -57,8 +60,15 @@ export interface Extractor<
   config: ExtractorConfig<TConfig, TInput>;
   /** Always present; `undefined` when this extractor does not use a cursor. */
   cursor: ExtractorCursorConfig<TCursor> | undefined;
-  extract: ExtractFunction<TData, TConfig, TCursor>;
+  extract: ExtractGeneratorFunction<TData, TConfig, TCursor>;
 }
+
+/** Widened extractor for generic constraints (e.g. `AnyPipeline`). */
+export type AnyExtractor = Extractor<any, any, any, any>;
+
+/** Datalake row shape (`TData`) carried by an extractor instance. */
+export type ExtractorData<TExtractor> =
+  TExtractor extends Extractor<infer TData, any, any, any> ? TData : never;
 
 export interface CreateExtractorOptions<
   TData,
@@ -70,35 +80,70 @@ export interface CreateExtractorOptions<
   cron: string;
   config: CreateExtractorConfig<TConfig, TInput>;
   cursor?: ExtractorCursorConfig<TCursor>;
-  extract: ExtractFunction<TData, TConfig, TCursor>;
+  extract: ExtractGeneratorFunction<TData, TConfig, TCursor>;
 }
 
-export function createExtractor<
-  TData,
-  TConfig = unknown,
-  TInput = TConfig,
-  TCursor = unknown,
->(
-  options: CreateExtractorOptions<TData, TConfig, TCursor, TInput> & {
-    cursor: ExtractorCursorConfig<TCursor>;
-  },
-): Extractor<TData, TConfig, TCursor, TInput>;
+type InferConfigFromCreate<TCreate extends (...args: never[]) => unknown> = Awaited<
+  ReturnType<TCreate>
+> extends ExtractorCreateResult<infer TConfig>
+  ? TConfig
+  : never;
 
 export function createExtractor<
   TData,
-  TConfig = unknown,
-  TInput = TConfig,
+  TSchema extends z.ZodType,
+  TCreate extends (
+    input: z.infer<TSchema>,
+  ) => ExtractorCreateResult<unknown> | Promise<ExtractorCreateResult<unknown>>,
+  TCursorSchema extends z.ZodType,
 >(
-  options: CreateExtractorOptions<TData, TConfig, unknown, TInput> & {
+  options: {
+    id: string;
+    cron: string;
+    config: {
+      schema: TSchema;
+      create: TCreate;
+    };
+    extract: ExtractGeneratorFunction<
+      TData,
+      InferConfigFromCreate<TCreate>,
+      z.infer<TCursorSchema>
+    >;
+    cursor: {
+      schema: TCursorSchema;
+    };
+  },
+): Extractor<
+  TData,
+  InferConfigFromCreate<TCreate>,
+  z.infer<TCursorSchema>,
+  z.infer<TSchema>
+>;
+
+export function createExtractor<
+  TData,
+  TSchema extends z.ZodType,
+  TCreate extends (
+    input: z.infer<TSchema>,
+  ) => ExtractorCreateResult<unknown> | Promise<ExtractorCreateResult<unknown>>,
+>(
+  options: {
+    id: string;
+    cron: string;
+    config: {
+      schema: TSchema;
+      create: TCreate;
+    };
+    extract: ExtractGeneratorFunction<TData, InferConfigFromCreate<TCreate>, unknown>;
     cursor?: undefined;
   },
-): Extractor<TData, TConfig, unknown, TInput>;
+): Extractor<TData, InferConfigFromCreate<TCreate>, unknown, z.infer<TSchema>>;
 
 export function createExtractor<
   TData,
   TConfig = unknown,
-  TInput = TConfig,
   TCursor = unknown,
+  TInput = TConfig,
 >(
   options: CreateExtractorOptions<TData, TConfig, TCursor, TInput>,
 ): Extractor<TData, TConfig, TCursor, TInput> {

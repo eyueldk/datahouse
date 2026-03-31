@@ -1,4 +1,4 @@
-import { createCollection } from "datahouse";
+import { createCollection } from "datahouse/core";
 import { z } from "zod";
 
 export const unifiedBookSchema = z.object({

@@ -1,5 +1,6 @@
-import type { TreatyClient } from "../internal/treaty";
-import { unwrapData } from "../internal/result";
+import { paginate, unwrapData } from "../utils";
+import type { TreatyClient } from "../utils/treaty.ts";
+import type { PaginatedResponse } from "../types";
 
 export type RunType = "extract" | "transform";
 export type RunStatus = "running" | "completed" | "failed";
@@ -13,60 +14,47 @@ export interface RunRecord {
   completedAt: Date | null;
 }
 
-export function createRunsApi(params: { client: TreatyClient }) {
-  const { client } = params;
-
-  const list = async (
-    params: {
+export interface RunsClient {
+  list(
+    params?: {
       type?: RunType;
       limit?: number;
       offset?: number;
-    } = {},
-  ) => {
-    const response = await client.api.runs.get({
-      query: {
-        type: params.type,
-        limit: params.limit,
-        offset: params.offset,
-      },
-    });
-    return unwrapData(response, "Failed to list runs");
-  };
-
-  return {
-    list,
-
-    async *iterate(
-      params: {
-        type?: RunType;
-        limit?: number;
-        offset?: number;
-      } = {},
-    ) {
-      const limit = params.limit;
-      let offset = params.offset ?? 0;
-
-      while (true) {
-        const page = await list({
-          type: params.type,
-          limit,
-          offset,
-        });
-        if (page.items.length === 0) {
-          break;
-        }
-        for (const item of page.items) {
-          yield item;
-        }
-        offset += page.items.length;
-        if (offset >= page.meta.total) {
-          break;
-        }
-      }
     },
+  ): Promise<PaginatedResponse<RunRecord>>;
+  pages(
+    params?: {
+      type?: RunType;
+      limit?: number;
+      offset?: number;
+    },
+  ): AsyncGenerator<PaginatedResponse<RunRecord>, void, undefined>;
+  get(params: { id: string }): Promise<RunRecord>;
+}
 
-    async get(params: { id: string }) {
-      const response = await client.api.runs({ id: params.id }).get();
+export function createRunsClient(client: unknown): RunsClient {
+  const tc = client as TreatyClient;
+  return {
+    async list(params = {}) {
+      const response = await tc.api.runs.get({
+        query: {
+          type: params.type,
+          limit: params.limit,
+          offset: params.offset,
+        },
+      });
+      return unwrapData(response, "Failed to list runs");
+    },
+    pages(params = {}) {
+      const { type, limit: pageLimit, offset: startOffset } = params;
+      return paginate(
+        ({ limit, offset }) =>
+          this.list({ type, limit, offset }),
+        { limit: pageLimit, offset: startOffset },
+      );
+    },
+    async get(params) {
+      const response = await tc.api.runs({ id: params.id }).get();
       return unwrapData(response, `Failed to get run ${params.id}`);
     },
   };

@@ -3,7 +3,7 @@ import { startStudio } from "@datahouse/studio/server";
 
 export const studioCommand = command({
   name: "studio",
-  description: "Start the DataHouse studio",
+  description: "Start the Datahouse studio",
   args: {
     port: option({
       type: number,

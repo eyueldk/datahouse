@@ -1,6 +1,8 @@
 # @datahouse/runtime
 
-Library that runs the DataHouse server: Elysia app, config loading, migrations, and cron-backed extract/transform jobs.
+**Not published.** Monorepo workspace only; end users run **`datahouse serve`** (the CLI bundles this).
+
+Library that runs the Datahouse server: Elysia app, config loading, migrations, and cron-backed extract/transform jobs.
 
 ## Usage
 
@@ -18,15 +20,14 @@ await startServer({ port: 2510, configPath: "./datahouse.config.ts" });
 ## Environment
 
 - **`DATABASE_URL`** (optional) — Postgres connection string. If unset, the server uses PGlite with data in `.datahouse/pglite`.
-- **`REDIS_HOST`** (optional) — Default `localhost`. Used by BullMQ for job queues.
-- **`REDIS_PORT`** (optional) — Default `6379`.
-- **`S3_*`** (optional) — S3-compatible storage (e.g. MinIO). Defaults point to `http://localhost:9000` and bucket `datahouse`.
+- **`BUNQUEUE_HOST`** / **`BUNQUEUE_PORT`** (optional) — Connection to a `bunqueue` worker service. If `BUNQUEUE_HOST` is unset, the runtime uses **embedded mode** (tasks run in the same process).
+- **`S3_*`** (optional) — S3-compatible storage (e.g. MinIO).
 
 See `.env.example` for a full list.
 
 ## Config
 
-Config is a module default-exporting a `DataHouseConfig` (from `@datahouse/core`). Pass `configPath` to `startServer`; the CLI (e.g. `datahouse serve [file]`) provides default lookup when no file is given.
+Config is a module default-exporting a **`Datahouse`** value from `@datahouse/core` (built with `createDatahouse`). Pass `configPath` to `startServer`; the CLI (e.g. `datahouse serve [file]`) provides default lookup when no file is given.
 
 ## Database (Drizzle)
 

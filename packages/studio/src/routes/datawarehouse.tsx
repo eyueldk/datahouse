@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useForm } from "@tanstack/react-form";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Button } from "#/components/ui/button";
 import {
@@ -25,60 +26,60 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
+import type { AnyDatahouse } from "@datahouse/core";
+import type {
+  CollectionIdFromDatahouse,
+  DatawarehouseRecord,
+} from "@datahouse/client/types";
 import { client } from "#/lib/client";
 
-type RecordItem = {
-  id: string;
-  runId: string;
-  bronzeRecordId: string;
-  transformerId: string;
-  key: string;
-  collection: string;
-  data: unknown;
-  createdAt: Date;
-};
+type DatawarehouseBrowseRecord = DatawarehouseRecord<
+  unknown,
+  CollectionIdFromDatahouse<AnyDatahouse>
+>;
 
-export const Route = createFileRoute("/records")({
+async function fetchAllRecords(): Promise<DatawarehouseBrowseRecord[]> {
+  const { items: collections } = await client.datawarehouse.collections();
+  const records: DatawarehouseBrowseRecord[] = [];
+  for (const collection of collections) {
+    for await (const page of client.datawarehouse.records({
+      collection: collection as CollectionIdFromDatahouse<AnyDatahouse>,
+      limit: 200,
+    })) {
+      records.push(...page.items);
+    }
+  }
+  return records;
+}
+
+export const Route = createFileRoute("/datawarehouse")({
   loader: async () => {
-    const payload = await client.records.list({});
-    return { records: payload.items };
+    const records = await fetchAllRecords();
+    return { records };
   },
-  component: RecordsPage,
+  component: DatawarehousePage,
 });
 
-function RecordsPage() {
+function DatawarehousePage() {
   const { records } = Route.useLoaderData();
-  const [selectedCollection, setSelectedCollection] = useState<string>("all");
-  const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
-  const typedRecords = records as RecordItem[];
+  const [selectedRecord, setSelectedRecord] =
+    useState<DatawarehouseBrowseRecord | null>(null);
+
+  const browseForm = useForm({
+    defaultValues: {
+      collection: "all",
+    },
+  });
 
   const collections = Array.from(
-    new Set(typedRecords.map((record) => record.collection)),
+    new Set(records.map((record) => record.collection)),
   ).sort((a, b) => a.localeCompare(b));
-  const filteredRecords =
-    selectedCollection === "all"
-      ? typedRecords
-      : typedRecords.filter(
-          (record) => record.collection === selectedCollection,
-        );
 
-  const columns: ColumnDef<RecordItem>[] = [
-    {
-      accessorKey: "id",
-      header: "ID",
-    },
-    {
-      accessorKey: "key",
-      header: "Key",
-    },
-    {
-      accessorKey: "collection",
-      header: "Collection",
-    },
-    {
-      accessorKey: "transformerId",
-      header: "Transformer",
-    },
+  const columns: ColumnDef<DatawarehouseBrowseRecord>[] = [
+    { accessorKey: "id", header: "ID" },
+    { accessorKey: "key", header: "Key" },
+    { accessorKey: "collection", header: "Collection" },
+    { accessorKey: "transformerId", header: "Transformer" },
     {
       accessorKey: "createdAt",
       header: "Created At",
@@ -105,32 +106,51 @@ function RecordsPage() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Records</CardTitle>
+          <CardTitle>Data warehouse</CardTitle>
           <CardDescription>
-            Golden records across all collections in this Datahouse runtime.
+            Curated collection records produced by transformers.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4 grid gap-2">
-            <Label htmlFor="record-collection-filter">Collection</Label>
-            <Select
-              value={selectedCollection}
-              onValueChange={(value) => setSelectedCollection(value ?? "all")}
-            >
-              <SelectTrigger id="record-collection-filter" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectItem value="all">All collections</SelectItem>
-                {collections.map((collection) => (
-                  <SelectItem key={collection} value={collection}>
-                    {collection}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <browseForm.Field name="collection">
+              {(field) => (
+                <>
+                  <Label htmlFor={field.name}>Collection</Label>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) => field.handleChange(value ?? "all")}
+                  >
+                    <SelectTrigger id={field.name} className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent align="start">
+                      <SelectItem value="all">All collections</SelectItem>
+                      {collections.map((collection) => (
+                        <SelectItem key={collection} value={collection}>
+                          {collection}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+            </browseForm.Field>
           </div>
-          <DataTable columns={columns} data={filteredRecords} />
+          <browseForm.Subscribe selector={(state) => state.values.collection}>
+            {(collection) => (
+              <DataTable
+                columns={columns}
+                data={
+                  collection === "all"
+                    ? records
+                    : records.filter(
+                        (record) => record.collection === collection,
+                      )
+                }
+              />
+            )}
+          </browseForm.Subscribe>
         </CardContent>
       </Card>
 
@@ -143,19 +163,19 @@ function RecordsPage() {
           className="w-full overflow-hidden sm:max-w-xl"
         >
           <SheetHeader>
-            <SheetTitle>Record Details</SheetTitle>
+            <SheetTitle>Record details</SheetTitle>
             <SheetDescription>
-              Inspect full metadata and payload for the selected record.
+              Metadata and payload for the selected data warehouse record.
             </SheetDescription>
           </SheetHeader>
           {selectedRecord ? (
             <div className="grid flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
               <Detail label="ID" value={selectedRecord.id} />
-              <Detail label="Run ID" value={selectedRecord.runId} />
               <Detail
-                label="Bronze Record ID"
-                value={selectedRecord.bronzeRecordId}
+                label="Run ID"
+                value={selectedRecord.runId}
               />
+              <Detail label="Datalake ID" value={selectedRecord.datalakeId} />
               <Detail
                 label="Transformer ID"
                 value={selectedRecord.transformerId}
