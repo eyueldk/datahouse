@@ -1,26 +1,31 @@
 {
-  "name": "@datahouse/core",
+  "name": "@datahouse/cli",
   "version": "0.1.0",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
-  "files": [
-    "dist"
-  ],
+  "bin": {
+    "datahouse": "dist/index.js"
+  },
   "exports": {
     ".": "./dist/index.js"
   },
-  "description": "Pipeline primitives: createExtractor, createTransformer, createCollection, and createDatahouse for wiring ETL workflows",
+  "description": "Command handlers and CLI entrypoint for datahouse serve and datahouse studio",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "check": "tsc --noEmit",
     "build": "bunup",
     "dev": "bunup --watch"
   },
   "dependencies": {
-    "zod": "4.3.5"
+    "cmd-ts": "^0.13.0",
+    "@datahouse/server": "workspace:*",
+    "@datahouse/studio": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"

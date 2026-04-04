@@ -3,7 +3,9 @@
   "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "description": "Example Datahouse integration with Open Library and Wikidata",
   "scripts": {
+    "check": "tsc --noEmit",
     "dev": "datahouse serve",
     "studio": "datahouse studio"
   },

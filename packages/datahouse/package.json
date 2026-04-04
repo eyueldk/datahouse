@@ -1,19 +1,14 @@
 {
   "name": "datahouse",
-  "version": "0.0.18",
+  "version": "0.1.0",
   "type": "module",
-  "description": "Datahouse framework",
+  "description": "CLI tool and framework for extract → transform → load pipelines. Includes datahouse serve, datahouse studio, and datahouse/core exports",
   "publishConfig": {
     "access": "public"
   },
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "default": "./dist/index.mjs"
-    },
     "./core": {
       "types": "./dist/core.d.mts",
       "import": "./dist/core.mjs",
@@ -26,7 +21,7 @@
     }
   },
   "bin": {
-    "datahouse": "dist/cli.mjs"
+    "datahouse": "./dist/cli/index.js"
   },
   "files": [
     "dist",
@@ -44,7 +39,7 @@
   "devDependencies": {
     "@datahouse/client": "workspace:*",
     "@datahouse/core": "workspace:*",
-    "@datahouse/runtime": "workspace:*",
+    "@datahouse/server": "workspace:*",
     "@types/bun": "latest",
     "tsdown": "^0.21.4",
     "typescript": "^5.9.3"

@@ -1,0 +1,47 @@
+{
+  "name": "@datahouse/server",
+  "description": "Datahouse server: Elysia HTTP API, Drizzle ORM, bunqueue job queues, and cron-scheduled pipeline runs",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "bunup",
+    "dev": "bunup --watch",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@datahouse/core": "workspace:*",
+    "@electric-sql/pglite": "^0.4.1",
+    "@elysiajs/cors": "^1.4.1",
+    "@elysiajs/openapi": "^1.4.14",
+    "bullmq": "^5.71.0",
+    "bunqueue": "^2.6.42",
+    "croner": "^10.0.1",
+    "drizzle-orm": "^0.45.1",
+    "elysia": "^1.4.28",
+    "logixlysia": "^6.2.2",
+    "nanoid": "^5.1.6",
+    "pg": "^8.20.0",
+    "superjson": "^2.2.6",
+    "traverse": "^0.6.11",
+    "zod": "4.3.5"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.18.0",
+    "@types/traverse": "^0.6.37",
+    "@typescript/native-preview": "^7.0.0-dev.20260403.1",
+    "bun-types": "latest",
+    "bunup": "^0.16.31",
+    "drizzle-kit": "^0.31.9"
+  }
+}
