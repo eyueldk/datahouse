@@ -1,22 +1,33 @@
 # datahouse
 
-Monorepo for the **datahouse** framework. **Only the [`datahouse`](https://www.npmjs.com/package/datahouse) package is published** — everything under `@datahouse/*` is internal layout and ships inside that single install.
+ETL framework for extract → transform → load pipelines with a server API and Studio UI.
 
-## Workspace packages (not published separately)
+**Only [`datahouse`](https://www.npmjs.com/package/datahouse) is published.** All `@datahouse/*` packages are internal workspace modules.
 
-| Package | Role in the repo |
-|---------|------------------|
-| `datahouse` | Published CLI + public exports (`datahouse`, `datahouse/core`, …) |
-| `@datahouse/core` | Core types and pipeline primitives |
-| `@datahouse/runtime` | Server, DB, queues, HTTP |
-| `@datahouse/client` | Typed API client (re-exported where needed) |
-| `@datahouse/studio` | Studio UI (bundled with `datahouse studio`) |
+## Quick Start
+
+```bash
+bun add datahouse
+```
+
+```bash
+datahouse serve   # API server, default :2510
+datahouse studio  # Studio UI, default :2511
+```
+
+## Packages
+
+| Package             | README                                                |
+| ------------------- | ----------------------------------------------------- |
+| `datahouse` CLI     | [packages/datahouse/README.md](./packages/datahouse/) |
+| `@datahouse/core`   | [packages/core/README.md](./packages/core/)           |
+| `@datahouse/client` | [packages/client/README.md](./packages/client/)       |
+| `@datahouse/server` | [packages/server/README.md](./packages/server/)       |
+| `@datahouse/studio` | [packages/studio/README.md](./packages/studio/)       |
+| `example`           | [packages/example/README.md](./packages/example/)     |
 
 ## Dev
 
 ```bash
-bun install
-bun run build
+bun install && bun run build
 ```
-
-Example app: `packages/example/` — `bun run dev` / `bun run studio`.

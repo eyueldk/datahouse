@@ -1,8 +1,9 @@
-import type { AnyRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export function toastQueuedRun(
-  router: Pick<AnyRouter, "navigate">,
+  router: {
+    navigate: (opts: { to: string; search?: unknown }) => Promise<void>;
+  },
   jobId: string,
   runType: "extract" | "transform",
   title = "Run queued",
@@ -22,7 +23,9 @@ export function toastQueuedRun(
 }
 
 export function toastQueuedTransformBatch(
-  router: Pick<AnyRouter, "navigate">,
+  router: {
+    navigate: (opts: { to: string; search?: unknown }) => Promise<void>;
+  },
   runIds: string[],
   enqueued: number,
 ) {

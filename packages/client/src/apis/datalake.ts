@@ -25,16 +25,14 @@ export interface DatalakeClient {
   }): AsyncGenerator<PaginatedResponse<DatalakeRecord>, void, undefined>;
   transform(params: {
     id: string;
-    /** Omit or undefined = all transformers for this row's extractor. */
     transformerIds?: string[];
   }): Promise<TriggerDatalakeTransformsResult>;
 }
 
-export function createDatalakeClient(client: unknown): DatalakeClient {
-  const tc = client as TreatyClient;
+export function createDatalakeClient(client: TreatyClient): DatalakeClient {
   return {
     async list(params) {
-      const response = await tc.api.datalake.get({
+      const response = await client.api.datalake.get({
         query: {
           extractorId: params.extractorId,
           sourceId: params.sourceId,
@@ -67,7 +65,7 @@ export function createDatalakeClient(client: unknown): DatalakeClient {
       }
     },
     async transform(params) {
-      const response = await tc.api
+      const response = await client.api
         .datalake({ id: params.id })
         .transform.post({
           transformerIds: params.transformerIds,

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type ColumnDef } from "@tanstack/react-table";
-import type { ExtractorInfo } from "@datahouse/client/apis/extractors";
+import type { ExtractorInfo } from "@datahouse/client";
 import {
   Card,
   CardContent,

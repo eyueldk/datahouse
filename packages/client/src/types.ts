@@ -72,7 +72,7 @@ export type DatalakeRecord = Prettify<{
   sourceId: string;
   extractorId: string;
   key: string;
-  data: unknown;
+  data: object;
   createdAt: Date;
 }>;
 

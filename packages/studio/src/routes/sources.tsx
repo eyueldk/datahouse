@@ -33,18 +33,20 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
+import { parseJsonValue, stringifyJson, toJsonSchema } from "#/lib/json-config";
 import {
-  parseJsonValue,
-  stringifyJson,
-  toJsonSchema,
-} from "#/lib/json-config";
-import { client } from "#/lib/client";
+  listSources,
+  listExtractors,
+  createSource,
+  deleteSource,
+  extractSource,
+} from "#/lib/server-functions";
 
 export const Route = createFileRoute("/sources")({
   loader: async () => {
     const [sourcesPayload, extractorsPayload] = await Promise.all([
-      client.sources.list({}),
-      client.extractors.list({}),
+      listSources(),
+      listExtractors(),
     ]);
     return {
       sources: sourcesPayload.items,
@@ -77,9 +79,11 @@ function SourcesPage() {
     onSubmit: async ({ value }) => {
       setStatusError(null);
       const parsedConfig = parseJsonValue(value.configJson);
-      await client.sources.create({
-        extractorId: value.extractorId,
-        config: parsedConfig,
+      await createSource({
+        data: {
+          extractorId: value.extractorId,
+          config: parsedConfig,
+        },
       });
       setOpen(false);
       await router.invalidate();
@@ -97,14 +101,14 @@ function SourcesPage() {
 
   const extractFromSource = async (id: string) => {
     setStatusError(null);
-    const result = await client.sources.extract({ id });
+    const result = await extractSource({ data: { id } });
     toastQueuedRun(router, result.jobId, "extract", "Extract run queued");
     await router.invalidate();
   };
 
-  const deleteSource = async (id: string) => {
+  const handleDeleteSource = async (id: string) => {
     setStatusError(null);
-    await client.sources.remove({ id });
+    await deleteSource({ data: { id } });
     await router.invalidate();
   };
 
@@ -145,7 +149,7 @@ function SourcesPage() {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => void deleteSource(row.original.id)}
+            onClick={() => void handleDeleteSource(row.original.id)}
           >
             Delete
           </Button>
@@ -233,7 +237,9 @@ function SourcesPage() {
                       <Button
                         type="button"
                         variant={
-                          field.state.value === "visual" ? "default" : "secondary"
+                          field.state.value === "visual"
+                            ? "default"
+                            : "secondary"
                         }
                         onClick={() => field.handleChange("visual")}
                       >

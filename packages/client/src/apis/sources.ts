@@ -11,27 +11,23 @@ export interface SourceRecord {
   id: string;
   extractorId: string;
   key: string;
-  config: unknown;
-  cursor: unknown;
-  schema: unknown;
+  config: object;
+  cursor: object;
+  schema: object;
   createdAt: Date;
 }
 
 export interface SourcesClient {
-  list(
-    params?: {
-      extractorId?: string;
-      limit?: number;
-      offset?: number;
-    },
-  ): Promise<PaginatedResponse<SourceRecord>>;
-  pages(
-    params?: {
-      extractorId?: string;
-      limit?: number;
-      offset?: number;
-    },
-  ): AsyncGenerator<PaginatedResponse<SourceRecord>, void, undefined>;
+  list(params?: {
+    extractorId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PaginatedResponse<SourceRecord>>;
+  pages(params?: {
+    extractorId?: string;
+    limit?: number;
+    offset?: number;
+  }): AsyncGenerator<PaginatedResponse<SourceRecord>, void, undefined>;
   get(params: { id: string }): Promise<SourceRecord>;
   create(params: {
     extractorId: string;
@@ -48,11 +44,10 @@ export interface SourcesClient {
   extract(params: { id: string }): Promise<ExtractSourceResult>;
 }
 
-export function createSourcesClient(client: unknown): SourcesClient {
-  const tc = client as TreatyClient;
+export function createSourcesClient(client: TreatyClient): SourcesClient {
   return {
     async list(params = {}) {
-      const response = await tc.api.sources.get({
+      const response = await client.api.sources.get({
         query: {
           extractorId: params.extractorId,
           limit: params.limit,
@@ -73,20 +68,20 @@ export function createSourcesClient(client: unknown): SourcesClient {
       );
     },
     async get(params) {
-      const response = await tc.api.sources({ id: params.id }).get();
+      const response = await client.api.sources({ id: params.id }).get();
       return unwrapData(response, `Failed to get source ${params.id}`);
     },
     async create(params) {
-      const response = await tc.api.sources.post(params);
+      const response = await client.api.sources.post(params);
       return unwrapData(response, "Failed to create source");
     },
     async update(params) {
       const { id, ...body } = params;
-      const response = await tc.api.sources({ id }).patch(body);
+      const response = await client.api.sources({ id }).patch(body);
       return unwrapData(response, `Failed to update source ${id}`);
     },
     async remove(params) {
-      const response = await tc.api.sources({ id: params.id }).delete();
+      const response = await client.api.sources({ id: params.id }).delete();
       if (response.error) {
         throw new Error(
           `Failed to delete source ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
@@ -94,10 +89,13 @@ export function createSourcesClient(client: unknown): SourcesClient {
       }
     },
     async extract(params) {
-      const response = await tc.api
+      const response = await client.api
         .sources({ id: params.id })
         .extract.post();
-      return unwrapData(response, `Failed to enqueue extract for source ${params.id}`);
+      return unwrapData(
+        response,
+        `Failed to enqueue extract for source ${params.id}`,
+      );
     },
   };
 }

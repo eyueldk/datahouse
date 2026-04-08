@@ -9,8 +9,10 @@ export interface TransformersClient {
   list(params?: { extractorId?: string }): Promise<{ items: TransformerRef[] }>;
 }
 
-export function createTransformersClient(client: unknown): TransformersClient {
-  const tc = client as TreatyClient;
+export function createTransformersClient(
+  client: TreatyClient,
+): TransformersClient {
+  const tc = client;
   return {
     async list(params = {}) {
       const response = await tc.api.transformers.get({

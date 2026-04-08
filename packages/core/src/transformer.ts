@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { AnyCollection, ZodSchema } from "./collection";
-import type { AnyExtractor, Extractor, ExtractorData } from "./extractor";
+import type { AnyExtractor, ExtractorData } from "./extractor";
 import type { UploadedFile } from "./file";
 
 /** Flattens object types for cleaner tooltips (no nested intersections). */

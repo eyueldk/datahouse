@@ -17,7 +17,7 @@ ENV NODE_ENV=production
 ARG VITE_DATAHOUSE_DOMAIN=http://localhost:2510
 ENV VITE_DATAHOUSE_DOMAIN=$VITE_DATAHOUSE_DOMAIN
 
-COPY --from=deps /root/.bun /root/.bun
+  # (No-op: removed invalid /root/.bun copy)
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json bun.lock turbo.json ./
 COPY packages ./packages
@@ -32,7 +32,7 @@ ENV NODE_ENV=production
 
 COPY --from=build /app/packages /app/packages
 COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /root/.bun /root/.bun
+# (No-op: removed invalid /root/.bun copy)
 COPY --from=build /app/package.json /app/package.json
 COPY --from=build /app/bun.lock /app/bun.lock
 

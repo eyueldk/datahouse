@@ -1,4 +1,4 @@
-import { createPipeline, createDatahouse } from "datahouse";
+import { createPipeline, createDatahouse } from "datahouse/core";
 import { openLibraryExtractor } from "./extractors/open-library";
 import { wikidataExtractor } from "./extractors/wikidata";
 import { openLibraryTransformer } from "./transformers/open-library-transformer";

@@ -9,33 +9,31 @@ import type {
   PaginatedResponse,
 } from "../types";
 
-export interface DatawarehouseClient<
-  TCollection extends AnyCollection,
-> {
+export interface DatawarehouseClient<TCollection extends AnyCollection> {
   /** Distinct collection ids from live datawarehouse rows and tombstones. */
   collections(): Promise<{ items: string[] }>;
 
-  tombstones<const TCollectionId extends CollectionIdFromCollection<TCollection>>(
-    params: {
-      collection: TCollectionId;
-      since?: Date | null;
-      limit?: number;
-      offset?: number;
-    },
-  ): AsyncGenerator<
+  tombstones<
+    const TCollectionId extends CollectionIdFromCollection<TCollection>,
+  >(params: {
+    collection: TCollectionId;
+    since?: Date | null;
+    limit?: number;
+    offset?: number;
+  }): AsyncGenerator<
     PaginatedResponse<DatawarehouseTombstone>,
     void,
     undefined
   >;
 
-  records<const TCollectionId extends CollectionIdFromCollection<TCollection>>(
-    params: {
-      collection: TCollectionId;
-      since?: Date | null;
-      limit?: number;
-      offset?: number;
-    },
-  ): AsyncGenerator<
+  records<
+    const TCollectionId extends CollectionIdFromCollection<TCollection>,
+  >(params: {
+    collection: TCollectionId;
+    since?: Date | null;
+    limit?: number;
+    offset?: number;
+  }): AsyncGenerator<
     PaginatedResponse<
       DatawarehouseRecord<
         CollectionDataByIdFromCollection<TCollection, TCollectionId>,
@@ -49,29 +47,22 @@ export interface DatawarehouseClient<
 
 export function createDatawarehouseClient<
   const TCollection extends AnyCollection,
->(
-  client: unknown,
-): DatawarehouseClient<TCollection> {
-  const tc = client as TreatyClient;
-
+>(client: TreatyClient): DatawarehouseClient<TCollection> {
   async function collections(): Promise<{ items: string[] }> {
-    const response = await tc.api.datawarehouse.collections.get();
-    return unwrapData(
-      response,
-      "Failed to list datawarehouse collections",
-    ) as { items: string[] };
+    const response = await client.api.datawarehouse.collections.get();
+    return unwrapData(response, "Failed to list datawarehouse collections") as {
+      items: string[];
+    };
   }
 
   function tombstones<
-    const TCollectionId extends CollectionIdFromCollection<TCollection>
-  >(
-    params: {
-      collection: TCollectionId;
-      since?: Date | null;
-      limit?: number;
-      offset?: number;
-    },
-  ): AsyncGenerator<
+    const TCollectionId extends CollectionIdFromCollection<TCollection>,
+  >(params: {
+    collection: TCollectionId;
+    since?: Date | null;
+    limit?: number;
+    offset?: number;
+  }): AsyncGenerator<
     PaginatedResponse<DatawarehouseTombstone>,
     void,
     undefined
@@ -80,7 +71,7 @@ export function createDatawarehouseClient<
       const limit = params.limit ?? 50;
       let offset = params.offset ?? 0;
       while (true) {
-        const response = await tc.api.datawarehouse.tombstones.post({
+        const response = await client.api.datawarehouse.tombstones.post({
           collection: params.collection,
           since: params.since ?? undefined,
           limit,
@@ -103,15 +94,13 @@ export function createDatawarehouseClient<
   }
 
   function records<
-    const TCollectionId extends CollectionIdFromCollection<TCollection>
-  >(
-    params: {
-      collection: TCollectionId;
-      since?: Date | null;
-      limit?: number;
-      offset?: number;
-    },
-  ): AsyncGenerator<
+    const TCollectionId extends CollectionIdFromCollection<TCollection>,
+  >(params: {
+    collection: TCollectionId;
+    since?: Date | null;
+    limit?: number;
+    offset?: number;
+  }): AsyncGenerator<
     PaginatedResponse<
       DatawarehouseRecord<
         CollectionDataByIdFromCollection<TCollection, TCollectionId>,
@@ -125,7 +114,7 @@ export function createDatawarehouseClient<
       const limit = params.limit ?? 50;
       let offset = params.offset ?? 0;
       while (true) {
-        const response = await tc.api.datawarehouse.records.post({
+        const response = await client.api.datawarehouse.records.post({
           collection: params.collection,
           since: params.since ?? undefined,
           limit,

@@ -1,18 +1,18 @@
 {
   "name": "example",
-  "module": "src/index.ts",
   "type": "module",
   "private": true,
-  "description": "Example Datahouse integration with Open Library and Wikidata",
+  "description": "Example Datahouse project",
   "scripts": {
     "check": "tsc --noEmit",
-    "dev": "datahouse serve",
-    "studio": "datahouse studio"
+    "studio": "datahouse studio",
+    "serve": "datahouse serve ./src/index.ts"
   },
   "dependencies": {
     "@datahouse/client": "workspace:*",
     "datahouse": "workspace:*",
-    "wikibase-sdk": "^10.2.1"
+    "wikibase-sdk": "^10.2.1",
+    "zod": "4.3.5"
   },
   "devDependencies": {
     "@types/bun": "latest"

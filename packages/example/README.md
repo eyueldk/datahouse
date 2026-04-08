@@ -1,37 +1,19 @@
-# datahouse book integration example
+# example
 
-This package demonstrates a simple Datahouse integration that aggregates books from two open sources:
+Example Datahouse integration aggregating books from Open Library and Wikidata.
 
-- Open Library search API (REST)
-- Wikidata Query Service (SPARQL, via `wikibase-sdk`)
-
-The pipeline normalizes both sources into one unified `UnifiedBook` model and loads into the `books` target.
-
-## Install
+## Run
 
 ```bash
-bun install
-```
-
-## Run with Datahouse CLI
-
-From the repository root:
-
-```bash
-bunx datahouse serve ./packages/example/src/index.ts
+bun run dev    # starts datahouse serve
+bun run studio # starts studio
 ```
 
 ## Structure
 
-- `src/extractors/open-library.ts`: pulls books from `openlibrary.org/search.json`
-- `src/extractors/wikidata.ts`: pulls books from Wikidata SPARQL endpoint
-- `src/transformers/*`: maps each source to a shared model
-- `src/models/book.ts`: unified output shape
-- `src/loaders/book-loader.ts`: loads to `target: "books"`
-- `src/index.ts`: registers the two pipelines
+- `src/extractors/` — Open Library and Wikidata extractors
+- `src/transformers/` — Maps sources to unified book model
+- `src/models/` — Output schema
+- `src/index.ts` — Pipeline registration
 
-## Notes
-
-- No API keys are required.
-- Open Library uses `fetch` directly (no official SDK).
-- Wikidata integration uses `wikibase-sdk`.
+No API keys required.

@@ -26,35 +26,27 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { AnyDatahouse } from "@datahouse/core";
-import type {
-  CollectionIdFromDatahouse,
-  DatawarehouseRecord,
-} from "@datahouse/client/types";
-import { client } from "#/lib/client";
+import type { DatawarehouseRecord } from "@datahouse/client";
+import {
+  listDatawarehouseCollections,
+  listDatawarehouseRecords,
+} from "#/lib/server-functions";
 
-type DatawarehouseBrowseRecord = DatawarehouseRecord<
-  unknown,
-  CollectionIdFromDatahouse<AnyDatahouse>
->;
-
-async function fetchAllRecords(): Promise<DatawarehouseBrowseRecord[]> {
-  const { items: collections } = await client.datawarehouse.collections();
-  const records: DatawarehouseBrowseRecord[] = [];
-  for (const collection of collections) {
-    for await (const page of client.datawarehouse.records({
-      collection: collection as CollectionIdFromDatahouse<AnyDatahouse>,
-      limit: 200,
-    })) {
-      records.push(...page.items);
-    }
-  }
-  return records;
-}
+type DatawarehouseBrowseRecord = DatawarehouseRecord<unknown, string>;
 
 export const Route = createFileRoute("/datawarehouse")({
   loader: async () => {
-    const records = await fetchAllRecords();
+    const { items: collections } = await listDatawarehouseCollections();
+    const records: DatawarehouseBrowseRecord[] = [];
+    for (const collection of collections) {
+      const { items } = await listDatawarehouseRecords({
+        data: {
+          collection,
+          limit: 200,
+        },
+      });
+      records.push(...items);
+    }
     return { records };
   },
   component: DatawarehousePage,
@@ -119,7 +111,9 @@ function DatawarehousePage() {
                   <Label htmlFor={field.name}>Collection</Label>
                   <Select
                     value={field.state.value}
-                    onValueChange={(value) => field.handleChange(value ?? "all")}
+                    onValueChange={(value) =>
+                      field.handleChange(value ?? "all")
+                    }
                   >
                     <SelectTrigger id={field.name} className="w-full">
                       <SelectValue />
@@ -171,10 +165,7 @@ function DatawarehousePage() {
           {selectedRecord ? (
             <div className="grid flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
               <Detail label="ID" value={selectedRecord.id} />
-              <Detail
-                label="Run ID"
-                value={selectedRecord.runId}
-              />
+              <Detail label="Run ID" value={selectedRecord.runId} />
               <Detail label="Datalake ID" value={selectedRecord.datalakeId} />
               <Detail
                 label="Transformer ID"

@@ -1,20 +1,18 @@
 {
   "name": "@datahouse/server",
-  "description": "Datahouse server: Elysia HTTP API, Drizzle ORM, bunqueue job queues, and cron-scheduled pipeline runs",
   "version": "0.1.0",
   "type": "module",
+  "description": "Datahouse server.",
+  "main": "dist/index.mjs",
+  "types": "src/index.d.ts",
   "files": [
     "dist"
   ],
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "check": "tsc --noEmit",
-    "build": "bunup",
-    "dev": "bunup --watch",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push"
@@ -39,9 +37,9 @@
   "devDependencies": {
     "@types/pg": "^8.18.0",
     "@types/traverse": "^0.6.37",
-    "@typescript/native-preview": "^7.0.0-dev.20260403.1",
     "bun-types": "latest",
-    "bunup": "^0.16.31",
-    "drizzle-kit": "^0.31.9"
+    "drizzle-kit": "^0.31.9",
+    "tsdown": "0.21.7",
+    "unrun": "0.2.30"
   }
 }

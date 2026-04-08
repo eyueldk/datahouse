@@ -36,22 +36,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { DatalakeRecord } from "@datahouse/client/types";
-import { client } from "#/lib/client";
+import type { DatalakeRecord } from "@datahouse/client";
+import {
+  listDatalake,
+  listTransformers,
+  transformDatalake,
+} from "#/lib/server-functions";
 import { toastQueuedTransformBatch } from "#/lib/job-toast";
-
-async function fetchAllRecords(): Promise<DatalakeRecord[]> {
-  const records: DatalakeRecord[] = [];
-  for await (const page of client.datalake.pages({ limit: 200 })) {
-    records.push(...page.items);
-  }
-  return records;
-}
 
 export const Route = createFileRoute("/datalake")({
   loader: async () => {
-    const records = await fetchAllRecords();
-    return { records };
+    const { items } = await listDatalake();
+    return { records: items };
   },
   component: DatalakePage,
 });
@@ -90,8 +86,10 @@ function DatalakePage() {
     let cancelled = false;
     void (async () => {
       try {
-        const { items } = await client.transformers.list({
-          extractorId: transformRecord.extractorId,
+        const { items } = await listTransformers({
+          data: {
+            extractorId: transformRecord.extractorId,
+          },
         });
         if (cancelled) return;
         setTransformerList(items);
@@ -127,9 +125,11 @@ function DatalakePage() {
       const allSelected =
         transformerList.length > 0 &&
         selectedTransformerIds.size === transformerList.length;
-      const r = await client.datalake.transform({
-        id: transformRecord.id,
-        transformerIds: allSelected ? undefined : [...selectedTransformerIds],
+      const r = await transformDatalake({
+        data: {
+          id: transformRecord.id,
+          transformerIds: allSelected ? undefined : [...selectedTransformerIds],
+        },
       });
       setTransformRecord(null);
       toastQueuedTransformBatch(router, r.runIds, r.enqueued);
@@ -196,7 +196,9 @@ function DatalakePage() {
                   <Label htmlFor={field.name}>Extractor</Label>
                   <Select
                     value={field.state.value}
-                    onValueChange={(value) => field.handleChange(value ?? "all")}
+                    onValueChange={(value) =>
+                      field.handleChange(value ?? "all")
+                    }
                   >
                     <SelectTrigger id={field.name} className="w-full">
                       <SelectValue />
@@ -240,8 +242,8 @@ function DatalakePage() {
             <DialogTitle>Run transforms</DialogTitle>
             <DialogDescription>
               Choose which transformers to run for this datalake row. Each run
-              replaces existing datawarehouse output for that transformer.
-              Leave all selected to run every transformer for this extractor.
+              replaces existing datawarehouse output for that transformer. Leave
+              all selected to run every transformer for this extractor.
             </DialogDescription>
           </DialogHeader>
           {transformRecord ? (
@@ -249,7 +251,9 @@ function DatalakePage() {
               {transformerList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No transformers are registered for extractor{" "}
-                  <span className="font-mono">{transformRecord.extractorId}</span>
+                  <span className="font-mono">
+                    {transformRecord.extractorId}
+                  </span>
                   .
                 </p>
               ) : (

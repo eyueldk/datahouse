@@ -4,13 +4,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "private": true,
   "files": [
     "dist"
   ],
   "exports": {
     ".": "./dist/index.js"
   },
-  "description": "Pipeline primitives: createExtractor, createTransformer, createCollection, and createDatahouse for wiring ETL workflows",
+  "description": "Datahouse core",
   "publishConfig": {
     "access": "public"
   },
@@ -19,10 +20,8 @@
     "build": "bunup",
     "dev": "bunup --watch"
   },
-  "dependencies": {
-    "zod": "4.3.5"
-  },
   "peerDependencies": {
+    "zod": "4.3.5",
     "typescript": "^5"
   },
   "devDependencies": {

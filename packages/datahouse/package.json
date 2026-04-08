@@ -2,44 +2,31 @@
   "name": "datahouse",
   "version": "0.1.0",
   "type": "module",
-  "description": "CLI tool and framework for extract → transform → load pipelines. Includes datahouse serve, datahouse studio, and datahouse/core exports",
+  "private": false,
+  "description": "Datahouse framework",
   "publishConfig": {
     "access": "public"
   },
-  "main": "dist/index.mjs",
-  "types": "dist/index.d.mts",
   "exports": {
-    "./core": {
-      "types": "./dist/core.d.mts",
-      "import": "./dist/core.mjs",
-      "default": "./dist/core.mjs"
-    },
-    "./client": {
-      "types": "./dist/client.d.mts",
-      "import": "./dist/client.mjs",
-      "default": "./dist/client.mjs"
-    }
+    "./core": "./dist/core.mjs",
+    "./client": "./dist/client.mjs"
   },
   "bin": {
-    "datahouse": "./dist/cli/index.js"
+    "datahouse": "./dist/cli.mjs"
   },
   "files": [
-    "dist",
-    "README.md"
+    "dist"
   ],
   "scripts": {
     "build": "tsdown",
-    "dev": "tsdown --watch",
-    "prepublishOnly": "bun run build"
+    "dev": "tsdown --watch"
   },
   "dependencies": {
-    "cmd-ts": "^0.13.0",
-    "zod": "4.3.5"
+    "@datahouse/cli": "workspace:*",
+    "@datahouse/client": "workspace:*",
+    "@datahouse/core": "workspace:*"
   },
   "devDependencies": {
-    "@datahouse/client": "workspace:*",
-    "@datahouse/core": "workspace:*",
-    "@datahouse/server": "workspace:*",
     "@types/bun": "latest",
     "tsdown": "^0.21.4",
     "typescript": "^5.9.3"

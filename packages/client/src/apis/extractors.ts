@@ -5,26 +5,24 @@ import type { PaginatedResponse } from "../types";
 export interface ExtractorInfo {
   id: string;
   cron?: string;
-  schema: unknown;
+  schema: object;
 }
 
 export interface ExtractorsClient {
-  list(
-    params?: {
-      limit?: number;
-      offset?: number;
-    },
-  ): Promise<PaginatedResponse<ExtractorInfo>>;
-  pages(
-    params?: { limit?: number; offset?: number },
-  ): AsyncGenerator<PaginatedResponse<ExtractorInfo>, void, undefined>;
+  list(params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<PaginatedResponse<ExtractorInfo>>;
+  pages(params?: {
+    limit?: number;
+    offset?: number;
+  }): AsyncGenerator<PaginatedResponse<ExtractorInfo>, void, undefined>;
 }
 
-export function createExtractorsClient(client: unknown): ExtractorsClient {
-  const tc = client as TreatyClient;
+export function createExtractorsClient(client: TreatyClient): ExtractorsClient {
   return {
     async list(params = {}) {
-      const response = await tc.api.extractors.get({
+      const response = await client.api.extractors.get({
         query: {
           limit: params.limit,
           offset: params.offset,

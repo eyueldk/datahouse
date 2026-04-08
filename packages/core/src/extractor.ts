@@ -17,11 +17,7 @@ export interface ExtractContext<TConfig = unknown, TCursor = unknown> {
   download: (params: { id: string }) => Promise<Buffer>;
 }
 
-export type ExtractGeneratorFunction<
-  TData,
-  TConfig = unknown,
-  TCursor = unknown,
-> = (
+export type ExtractGeneratorFunction<TData, TConfig = {}, TCursor = {}> = (
   context: ExtractContext<TConfig, TCursor>,
 ) => AsyncGenerator<ExtractBatch<TData, TCursor>, void, void>;
 
@@ -51,14 +47,13 @@ export type ExtractorCursorConfig<TCursor = unknown> = {
 
 export interface Extractor<
   TData,
-  TConfig = unknown,
-  TCursor = unknown,
+  TConfig = {},
+  TCursor = {},
   TInput = TConfig,
 > {
   id: string;
   cron: string;
   config: ExtractorConfig<TConfig, TInput>;
-  /** Always present; `undefined` when this extractor does not use a cursor. */
   cursor: ExtractorCursorConfig<TCursor> | undefined;
   extract: ExtractGeneratorFunction<TData, TConfig, TCursor>;
 }
@@ -72,8 +67,8 @@ export type ExtractorData<TExtractor> =
 
 export interface CreateExtractorOptions<
   TData,
-  TConfig = unknown,
-  TCursor = unknown,
+  TConfig = {},
+  TCursor = {},
   TInput = TConfig,
 > {
   id: string;
@@ -83,11 +78,10 @@ export interface CreateExtractorOptions<
   extract: ExtractGeneratorFunction<TData, TConfig, TCursor>;
 }
 
-type InferConfigFromCreate<TCreate extends (...args: never[]) => unknown> = Awaited<
-  ReturnType<TCreate>
-> extends ExtractorCreateResult<infer TConfig>
-  ? TConfig
-  : never;
+type InferConfigFromCreate<TCreate extends (...args: never[]) => unknown> =
+  Awaited<ReturnType<TCreate>> extends ExtractorCreateResult<infer TConfig>
+    ? TConfig
+    : never;
 
 export function createExtractor<
   TData,
@@ -96,24 +90,22 @@ export function createExtractor<
     input: z.infer<TSchema>,
   ) => ExtractorCreateResult<unknown> | Promise<ExtractorCreateResult<unknown>>,
   TCursorSchema extends z.ZodType,
->(
-  options: {
-    id: string;
-    cron: string;
-    config: {
-      schema: TSchema;
-      create: TCreate;
-    };
-    extract: ExtractGeneratorFunction<
-      TData,
-      InferConfigFromCreate<TCreate>,
-      z.infer<TCursorSchema>
-    >;
-    cursor: {
-      schema: TCursorSchema;
-    };
-  },
-): Extractor<
+>(options: {
+  id: string;
+  cron: string;
+  config: {
+    schema: TSchema;
+    create: TCreate;
+  };
+  extract: ExtractGeneratorFunction<
+    TData,
+    InferConfigFromCreate<TCreate>,
+    z.infer<TCursorSchema>
+  >;
+  cursor: {
+    schema: TCursorSchema;
+  };
+}): Extractor<
   TData,
   InferConfigFromCreate<TCreate>,
   z.infer<TCursorSchema>,
@@ -126,18 +118,31 @@ export function createExtractor<
   TCreate extends (
     input: z.infer<TSchema>,
   ) => ExtractorCreateResult<unknown> | Promise<ExtractorCreateResult<unknown>>,
->(
-  options: {
-    id: string;
-    cron: string;
-    config: {
-      schema: TSchema;
-      create: TCreate;
-    };
-    extract: ExtractGeneratorFunction<TData, InferConfigFromCreate<TCreate>, unknown>;
-    cursor?: undefined;
-  },
-): Extractor<TData, InferConfigFromCreate<TCreate>, unknown, z.infer<TSchema>>;
+>(options: {
+  id: string;
+  cron: string;
+  config: {
+    schema: TSchema;
+    create: TCreate;
+  };
+  extract: ExtractGeneratorFunction<
+    TData,
+    InferConfigFromCreate<TCreate>,
+    unknown
+  >;
+  cursor?: undefined;
+}): Extractor<TData, InferConfigFromCreate<TCreate>, unknown, z.infer<TSchema>>;
+
+export function createExtractor<TData>(options: {
+  id: string;
+  cron: string;
+  config: {
+    schema: z.ZodType;
+    create: (input: unknown) => ExtractorCreateResult<unknown>;
+  };
+  extract: ExtractGeneratorFunction<TData, unknown, unknown>;
+  cursor?: undefined;
+}): Extractor<TData, unknown, unknown, unknown>;
 
 export function createExtractor<
   TData,

@@ -1,12 +1,8 @@
 # @datahouse/core
 
-**Not published.** This workspace exists for monorepo organization only. Apps install **`datahouse`** and import from **`datahouse/core`**.
+Core types and pipeline primitives: extractors, transformers, collections, and the root `Datahouse` object.
 
-Framework-agnostic ETL primitives: extractors (async generators), transformers, collections, and the root **Datahouse** object (`datahouse.ts`).
-
-## Root config: `createDatahouse`
-
-The core entry point is **`createDatahouse`** (see `src/datahouse.ts`). It wraps your pipelines in a typed **`Datahouse`** value. Pass that to the runtime or other adapters.
+## Usage
 
 ```ts
 import {
@@ -14,31 +10,64 @@ import {
   createPipeline,
   createExtractor,
   createTransformer,
+  createCollection,
 } from "@datahouse/core";
+```
 
-export default createDatahouse({
-  pipelines: [createPipeline(myExtractor, myTransformer)],
+## Create a Collection
+
+```ts
+const books = createCollection({
+  id: "books",
+  schema: z.object({
+    title: z.string(),
+    author: z.string(),
+  }),
 });
 ```
 
-## Building a pipeline
+## Create an Extractor
 
-Each pipeline is **extract → transform**. Use `createPipeline(extractor, transformer)`.
+```ts
+const fetcher = createExtractor({
+  id: "fetcher",
+  cron: "0 * * * *",
+  config: {
+    schema: z.object({ url: z.string() }),
+    create: (input) => ({ key: input.url, config: input }),
+  },
+  extract: async function* ({ config }) {
+    const res = await fetch(config.url);
+    const data = await res.json();
+    yield { items: [{ key: config.url, data }] };
+  },
+});
+```
 
-### Extractor
+## Create a Transformer
 
-An extractor pulls data in batches. It receives `{ config, cursor?, upload, download }` and **yields** `{ items: { key, data }[]; cursor? }`.
+```ts
+const processor = createTransformer({
+  id: "processor",
+  extractor: fetcher,
+  collections: [books],
+  transform: async function* ({ data }) {
+    yield {
+      collection: "books",
+      items: [
+        { key: data.title, data: { title: data.title, author: data.author } },
+      ],
+    };
+  },
+});
+```
 
-Extractor **config** (for source creation / validation) is:
+## Wire into Datahouse
 
-- `{ schema: z.ZodType<TInput>, create: (input: TInput) => { key: string, config: TConfig } | Promise<...> }`
-- `schema` validates source input
-- `create` returns a deterministic source identity (`key`) and normalized runtime config (`config`)
+```ts
+export default createDatahouse({
+  pipelines: [createPipeline(fetcher, processor)],
+});
+```
 
-### Transformer
-
-A transformer receives bronze **`data`** (plus `upload` / `download`) and **yields** **`TransformBatch`** chunks: `{ collection, items }` per collection—same async-generator pattern as **`ExtractBatch`** on the extractor side. The function type is **`TransformGeneratorFunction`** (mirrors **`ExtractGeneratorFunction`**).
-
-### Wiring with `createPipeline`
-
-`createPipeline(extractor, transformer)`. The extractor’s emitted item type must match the transformer’s input type.
+Pass to `@datahouse/server` or another adapter.

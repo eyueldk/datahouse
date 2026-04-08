@@ -2,37 +2,23 @@
   "name": "@datahouse/cli",
   "version": "0.1.0",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "datahouse": "dist/index.js"
-  },
+  "private": true,
+  "main": "dist/index.mjs",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.mjs"
   },
-  "description": "Command handlers and CLI entrypoint for datahouse serve and datahouse studio",
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "check": "tsc --noEmit",
-    "build": "bunup",
-    "dev": "bunup --watch"
+    "build": "tsdown",
+    "dev": "tsdown --watch"
   },
   "dependencies": {
-    "cmd-ts": "^0.13.0",
+    "cmd-ts": "^0.15.0",
     "@datahouse/server": "workspace:*",
     "@datahouse/studio": "workspace:*"
   },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
   "devDependencies": {
-    "@types/bun": "^1.3.11",
-    "@types/node": "^25.5.0",
-    "bunup": "^0.16.31"
+    "@types/bun": "latest",
+    "tsdown": "0.21.7",
+    "typescript": "^5.9.3"
   }
 }

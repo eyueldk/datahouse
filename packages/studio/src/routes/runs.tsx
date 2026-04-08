@@ -23,8 +23,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { RunRecord } from "@datahouse/client/apis/runs";
-import { client } from "#/lib/client";
+import type { RunRecord } from "@datahouse/client";
+import { listRuns, getRun } from "#/lib/server-functions";
 import { z } from "zod";
 
 const PAGE_SIZE = 25;
@@ -41,10 +41,12 @@ export const Route = createFileRoute("/runs")({
   loader: async ({ deps: { page, type } }) => {
     const limit = PAGE_SIZE;
     const offset = page * limit;
-    const payload = await client.runs.list({
-      type: type === "all" ? undefined : type,
-      limit,
-      offset,
+    const payload = await listRuns({
+      data: {
+        type: type === "all" ? undefined : type,
+        limit,
+        offset,
+      },
     });
     return {
       runs: payload.items,
@@ -80,7 +82,7 @@ function RunsPage() {
 
     async function refresh() {
       try {
-        const row = await client.runs.get({ id });
+        const row = await getRun({ data: { id } });
         if (cancelled) return;
         pollFailNotified.current = false;
         setSelected(row);
@@ -112,7 +114,7 @@ function RunsPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const row = await client.runs.get({ id: searchId });
+        const row = await getRun({ data: { id: searchId } });
         if (cancelled) return;
         setSelected(row);
       } catch (e) {
@@ -201,8 +203,8 @@ function RunsPage() {
         <CardHeader>
           <CardTitle>Runs</CardTitle>
           <CardDescription>
-            Extract and transform jobs in one place. Filter by run type or open a
-            row for re-run and batch-transform actions.
+            Extract and transform jobs in one place. Filter by run type or open
+            a row for re-run and batch-transform actions.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
