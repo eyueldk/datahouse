@@ -1,6 +1,6 @@
 # datahouse
 
-Published CLI and framework exports.
+Published CLI and framework. Install from npm:
 
 ```bash
 bun add datahouse
@@ -8,26 +8,51 @@ bun add datahouse
 
 ## Config
 
-Default-export a `createDatahouse` config:
+Default-export a `Datahouse` config built with `createDatahouse` from `datahouse/core`:
 
 ```ts
-import { createDatahouse, createPipeline } from "datahouse/core";
+import {
+  createDatahouse,
+  createPipeline,
+  createExtractor,
+  createTransformer,
+} from "datahouse/core";
+
+const extractor = createExtractor({
+  id: "my-extractor",
+  cron: "0 * * * *",
+  extract: async function* ({ config }) {
+    // yield { items: [{ key, data }] }
+  },
+});
+
+const transformer = createTransformer({
+  id: "my-transformer",
+  extractor,
+  transform: async function* ({ data }) {
+    // yield { collection, items: [{ key, data }] }
+  },
+});
 
 export default createDatahouse({
-  pipelines: [createPipeline(myExtractor, myTransformer)],
+  pipelines: [createPipeline(extractor, transformer)],
 });
 ```
 
 ## Commands
 
 ```bash
-datahouse serve              # API server, default :2510
-datahouse serve ./src/index.ts --port 3000
-datahouse studio             # Studio UI, default :2511
+datahouse serve              # API server, default http://localhost:2510
+datahouse serve ./config.ts  # Custom config path and port
+datahouse serve --port 3000
+
+datahouse studio             # Studio UI, default http://localhost:2511
 ```
 
 ## Exports
 
-- `datahouse` — CLI entry
-- `datahouse/core` — Core types and primitives
-- `datahouse/client` — Typed API client
+| Path               | Description                                                                                     |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| `datahouse`        | CLI entry (`serve`, `studio`)                                                                   |
+| `datahouse/core`   | `createDatahouse`, `createPipeline`, `createExtractor`, `createTransformer`, `createCollection` |
+| `datahouse/client` | `createClient` — typed API client                                                               |

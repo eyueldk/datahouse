@@ -1,8 +1,8 @@
 # @datahousejs/core
 
-Core types and pipeline primitives: extractors, transformers, collections, and the root `Datahouse` object.
+Core types and pipeline primitives: collections, extractors, transformers, and the root `Datahouse` object.
 
-## Usage
+## API
 
 ```ts
 import {
@@ -11,10 +11,10 @@ import {
   createExtractor,
   createTransformer,
   createCollection,
-} from "@datahousejs/core";
+} from "datahouse/core";
 ```
 
-## Create a Collection
+### Collection
 
 ```ts
 const books = createCollection({
@@ -26,25 +26,22 @@ const books = createCollection({
 });
 ```
 
-## Create an Extractor
+### Extractor
 
 ```ts
 const fetcher = createExtractor({
   id: "fetcher",
-  cron: "0 * * * *",
-  config: {
-    schema: z.object({ url: z.string() }),
-    create: (input) => ({ key: input.url, config: input }),
-  },
+  cron: "0 * * * *", // cron expression (optional)
   extract: async function* ({ config }) {
+    // fetch and yield items: { key, data }
     const res = await fetch(config.url);
     const data = await res.json();
-    yield { items: [{ key: config.url, data }] };
+    yield { items: [{ key: "item-1", data }] };
   },
 });
 ```
 
-## Create a Transformer
+### Transformer
 
 ```ts
 const processor = createTransformer({
@@ -52,6 +49,7 @@ const processor = createTransformer({
   extractor: fetcher,
   collections: [books],
   transform: async function* ({ data }) {
+    // map data to collection items
     yield {
       collection: "books",
       items: [
@@ -62,7 +60,7 @@ const processor = createTransformer({
 });
 ```
 
-## Wire into Datahouse
+### Pipeline
 
 ```ts
 export default createDatahouse({
@@ -70,4 +68,4 @@ export default createDatahouse({
 });
 ```
 
-Pass to `@datahousejs/server` or another adapter.
+Pass the `Datahouse` config to `datahouse serve` or `@datahousejs/server`.

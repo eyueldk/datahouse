@@ -1,12 +1,10 @@
 # @datahousejs/studio
 
-Studio UI for exploring and operating a Datahouse runtime (sources, runs, extractors, datalake/datawarehouse).
+**Internal package.** Not published. Consumed by `datahouse studio` CLI command.
 
-**Not published.** Internal package consumed by the `datahouse` CLI (`datahouse studio`); not installable from npm on its own.
+Studio UI for exploring and operating a Datahouse runtime: sources, runs, extractors, datalake, and datawarehouse.
 
 ## Development
-
-From the monorepo root:
 
 ```bash
 bun install

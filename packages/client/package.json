@@ -1,10 +1,11 @@
 {
   "name": "@datahousejs/client",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "private": false,
+  "description": "Datahouse client library",
   "repository": "https://github.com/eyueldk/datahouse",
   "files": [
     "dist"
@@ -12,7 +13,6 @@
   "exports": {
     ".": "./dist/index.js"
   },
-  "description": "Eden Treaty client for querying a Datahouse server with fully typed extractors, sources, runs, datalake, and datawarehouse APIs",
   "publishConfig": {
     "access": "public"
   },

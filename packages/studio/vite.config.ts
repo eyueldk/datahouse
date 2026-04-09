@@ -10,7 +10,6 @@ const config = defineConfig({
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
     tanstackStart(),
-    nitro(),
     nitro({ preset: "bun", output: { dir: "dist" } }),
     viteReact(),
   ],

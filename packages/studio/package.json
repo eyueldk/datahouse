@@ -1,9 +1,9 @@
 {
   "name": "@datahousejs/studio",
   "private": false,
-  "description": "Web UI for managing sources, extractors, runs, and browsing the datalake and datawarehouse",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
+  "description": "Datahouse studio",
   "repository": "https://github.com/eyueldk/datahouse",
   "publishConfig": {
     "access": "public"
