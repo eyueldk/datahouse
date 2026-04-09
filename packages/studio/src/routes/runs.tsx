@@ -23,7 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { RunRecord } from "@datahouse/client";
+import type { RunRecord } from "@datahousejs/client";
 import { listRuns, getRun } from "#/lib/server-functions";
 import { z } from "zod";
 

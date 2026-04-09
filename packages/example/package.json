@@ -9,7 +9,7 @@
     "serve": "datahouse serve ./src/index.ts"
   },
   "dependencies": {
-    "@datahouse/client": "workspace:*",
+    "@datahousejs/client": "workspace:*",
     "datahouse": "workspace:*",
     "wikibase-sdk": "^10.2.1",
     "zod": "4.3.5"

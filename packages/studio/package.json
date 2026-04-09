@@ -1,9 +1,13 @@
 {
-  "name": "@datahouse/studio",
-  "private": true,
+  "name": "@datahousejs/studio",
+  "private": false,
   "description": "Web UI for managing sources, extractors, runs, and browsing the datalake and datawarehouse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
+  "repository": "https://github.com/eyueldk/datahouse",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/server/index.mjs",
   "imports": {
     "#/*": "./src/*"
@@ -22,8 +26,8 @@
   },
   "dependencies": {
     "@base-ui/react": "1.2.0",
-    "@datahouse/client": "workspace:*",
-    "@datahouse/core": "workspace:*",
+    "@datahousejs/client": "workspace:*",
+    "@datahousejs/core": "workspace:*",
     "@fontsource-variable/geist": "^5.2.8",
     "@rjsf/core": "^6.4.1",
     "@rjsf/shadcn": "^6.4.1",

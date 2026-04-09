@@ -1,8 +1,12 @@
 {
-  "name": "@datahouse/cli",
-  "version": "0.1.0",
+  "name": "@datahousejs/cli",
+  "version": "0.1.1",
   "type": "module",
-  "private": true,
+  "private": false,
+  "repository": "https://github.com/eyueldk/datahouse",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.mjs",
   "exports": {
     ".": "./dist/index.mjs"
@@ -13,8 +17,8 @@
   },
   "dependencies": {
     "cmd-ts": "^0.15.0",
-    "@datahouse/server": "workspace:*",
-    "@datahouse/studio": "workspace:*"
+    "@datahousejs/server": "workspace:*",
+    "@datahousejs/studio": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

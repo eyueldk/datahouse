@@ -26,7 +26,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { DatawarehouseRecord } from "@datahouse/client";
+import type { DatawarehouseRecord } from "@datahousejs/client";
 import {
   listDatawarehouseCollections,
   listDatawarehouseRecords,

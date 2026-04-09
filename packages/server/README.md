@@ -1,4 +1,4 @@
-# @datahouse/runtime
+# @datahousejs/runtime
 
 **Not published.** Monorepo workspace only; end users run **`datahouse serve`** (the CLI bundles this).
 
@@ -7,7 +7,7 @@ Library that runs the Datahouse server: Elysia app, config loading, migrations, 
 ## Usage
 
 ```ts
-import { startServer } from "@datahouse/runtime";
+import { startServer } from "@datahousejs/runtime";
 
 await startServer({ port: 2510, configPath: "./datahouse.config.ts" });
 ```
@@ -27,11 +27,11 @@ See `.env.example` for a full list.
 
 ## Config
 
-Config is a module default-exporting a **`Datahouse`** value from `@datahouse/core` (built with `createDatahouse`). Pass `configPath` to `startServer`; the CLI (e.g. `datahouse serve [file]`) provides default lookup when no file is given.
+Config is a module default-exporting a **`Datahouse`** value from `@datahousejs/core` (built with `createDatahouse`). Pass `configPath` to `startServer`; the CLI (e.g. `datahouse serve [file]`) provides default lookup when no file is given.
 
 ## Database (Drizzle)
 
-- **Migrations** live in the package at `migrations/` and are exported via `@datahouse/runtime/migrations` (e.g. for Drizzle Kit or custom migrate scripts).
+- **Migrations** live in the package at `migrations/` and are exported via `@datahousejs/runtime/migrations` (e.g. for Drizzle Kit or custom migrate scripts).
 - **Generate migrations:** `bun run db:generate` (from this package directory).
 - **Drizzle Studio:** `bun run db:studio`
 - **Push schema (dev):** `bun run db:push`

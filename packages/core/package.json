@@ -1,10 +1,11 @@
 {
-  "name": "@datahouse/core",
-  "version": "0.1.0",
+  "name": "@datahousejs/core",
+  "version": "0.1.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
-  "private": true,
+  "private": false,
+  "repository": "https://github.com/eyueldk/datahouse",
   "files": [
     "dist"
   ],

@@ -19,7 +19,7 @@ export const serve = command({
     }),
   },
   handler: async (args) => {
-    const path = require.resolve("@datahouse/server");
+    const path = require.resolve("@datahousejs/server");
     const child = Bun.spawn({
       cmd: ["bun", resolve(path)],
       env: {

@@ -36,7 +36,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "#/components/ui/sheet";
-import type { DatalakeRecord } from "@datahouse/client";
+import type { DatalakeRecord } from "@datahousejs/client";
 import {
   listDatalake,
   listTransformers,

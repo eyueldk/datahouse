@@ -1,1 +1,1 @@
-import "@datahouse/cli";
+import "@datahousejs/cli";

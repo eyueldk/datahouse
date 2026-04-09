@@ -1,4 +1,4 @@
-# @datahouse/studio
+# @datahousejs/studio
 
 Studio UI for exploring and operating a Datahouse runtime (sources, runs, extractors, datalake/datawarehouse).
 
@@ -10,5 +10,5 @@ From the monorepo root:
 
 ```bash
 bun install
-bun run dev --filter=@datahouse/studio
+bun run dev --filter=@datahousejs/studio
 ```

@@ -1,4 +1,4 @@
-import { UploadedFile } from "@datahouse/core";
+import { UploadedFile } from "@datahousejs/core";
 import traverse from "traverse";
 
 /**

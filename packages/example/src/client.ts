@@ -1,10 +1,10 @@
-import { createClient } from "@datahouse/client";
+import { createClient } from "@datahousejs/client";
 import type {
   CollectionDataById,
   CollectionFromDatahouse,
   CollectionIdFromDatahouse,
   Prettify,
-} from "@datahouse/client/types";
+} from "@datahousejs/client/types";
 import datahouse from "./index";
 
 export type ExampleCollectionIds = CollectionIdFromDatahouse<typeof datahouse>;

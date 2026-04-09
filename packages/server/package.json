@@ -1,8 +1,12 @@
 {
-  "name": "@datahouse/server",
-  "version": "0.1.0",
+  "name": "@datahousejs/server",
+  "version": "0.1.1",
   "type": "module",
   "description": "Datahouse server.",
+  "repository": "https://github.com/eyueldk/datahouse",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.mjs",
   "types": "src/index.d.ts",
   "files": [
@@ -18,7 +22,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@datahouse/core": "workspace:*",
+    "@datahousejs/core": "workspace:*",
     "@electric-sql/pglite": "^0.4.1",
     "@elysiajs/cors": "^1.4.1",
     "@elysiajs/openapi": "^1.4.14",

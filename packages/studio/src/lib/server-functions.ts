@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createClient } from "@datahouse/client";
-import type { AnyDatahouse } from "@datahouse/core";
+import { createClient } from "@datahousejs/client";
+import type { AnyDatahouse } from "@datahousejs/core";
 
 const DATAHOUSE_URL = process.env.DATAHOUSE_URL ?? "http://localhost:2510";
 

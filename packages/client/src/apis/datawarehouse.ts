@@ -1,6 +1,6 @@
 import { unwrapData } from "../utils";
 import type { TreatyClient } from "../utils/treaty.ts";
-import type { AnyCollection } from "@datahouse/core";
+import type { AnyCollection } from "@datahousejs/core";
 import type {
   CollectionDataByIdFromCollection,
   CollectionIdFromCollection,

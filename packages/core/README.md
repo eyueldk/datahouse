@@ -1,4 +1,4 @@
-# @datahouse/core
+# @datahousejs/core
 
 Core types and pipeline primitives: extractors, transformers, collections, and the root `Datahouse` object.
 
@@ -11,7 +11,7 @@ import {
   createExtractor,
   createTransformer,
   createCollection,
-} from "@datahouse/core";
+} from "@datahousejs/core";
 ```
 
 ## Create a Collection
@@ -70,4 +70,4 @@ export default createDatahouse({
 });
 ```
 
-Pass to `@datahouse/server` or another adapter.
+Pass to `@datahousejs/server` or another adapter.

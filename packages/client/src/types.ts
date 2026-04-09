@@ -1,6 +1,6 @@
-import type { AnyDatahouse } from "@datahouse/core";
-import type { AnyCollection } from "@datahouse/core";
-import type { AnyPipeline } from "@datahouse/core";
+import type { AnyDatahouse } from "@datahousejs/core";
+import type { AnyCollection } from "@datahousejs/core";
+import type { AnyPipeline } from "@datahousejs/core";
 import type { z } from "zod";
 
 /** Flattens intersections so quick-info shows a single object shape. */

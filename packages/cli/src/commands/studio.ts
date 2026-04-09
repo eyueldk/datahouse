@@ -21,7 +21,7 @@ export const studio = command({
     }),
   },
   handler: async ({ port, apiUrl }) => {
-    const path = require.resolve("@datahouse/studio");
+    const path = require.resolve("@datahousejs/studio");
     const child = Bun.spawn({
       cmd: ["bun", resolve(path)],
       env: { PORT: port.toString(), DATAHOUSE_URL: apiUrl, ...process.env },

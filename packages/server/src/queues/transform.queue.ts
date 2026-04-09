@@ -1,4 +1,4 @@
-import { UploadedFile } from "@datahouse/core";
+import { UploadedFile } from "@datahousejs/core";
 import { datahouse } from "../configs/core.config";
 import { queueBackend } from "../configs/queue.config";
 import { findDatalakeRecord } from "../services/datalake.service";

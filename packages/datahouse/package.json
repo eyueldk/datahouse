@@ -1,7 +1,8 @@
 {
   "name": "datahouse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
+  "repository": "https://github.com/eyueldk/datahouse",
   "private": false,
   "description": "Datahouse framework",
   "publishConfig": {
@@ -22,9 +23,9 @@
     "dev": "tsdown --watch"
   },
   "dependencies": {
-    "@datahouse/cli": "workspace:*",
-    "@datahouse/client": "workspace:*",
-    "@datahouse/core": "workspace:*"
+    "@datahousejs/cli": "workspace:*",
+    "@datahousejs/client": "workspace:*",
+    "@datahousejs/core": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

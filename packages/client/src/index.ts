@@ -1,4 +1,4 @@
-import type { AnyDatahouse } from "@datahouse/core";
+import type { AnyDatahouse } from "@datahousejs/core";
 import { createDatahouseClient, type DatahouseClient } from "./client";
 
 export * from "./types";

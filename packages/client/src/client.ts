@@ -1,4 +1,4 @@
-import type { AnyDatahouse } from "@datahouse/core";
+import type { AnyDatahouse } from "@datahousejs/core";
 import { createDatalakeClient, type DatalakeClient } from "./apis/datalake";
 import {
   createDatawarehouseClient,

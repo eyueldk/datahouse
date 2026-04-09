@@ -1,11 +1,11 @@
-# @datahouse/client
+# @datahousejs/client
 
 Typed Datahouse client built on Elysia Treaty. Types inferred from your `createDatahouse` config.
 
 ## Usage
 
 ```ts
-import { createClient } from "@datahouse/client";
+import { createClient } from "@datahousejs/client";
 import datahouse from "./index";
 
 const client = createClient({

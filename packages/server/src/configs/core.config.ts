@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { resolve } from "node:path";
-import type { Datahouse, AnyPipeline } from "@datahouse/core";
+import type { Datahouse, AnyPipeline } from "@datahousejs/core";
 import { pathToFileURL } from "node:url";
 
 const schema = z.object({

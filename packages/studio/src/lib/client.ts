@@ -1,5 +1,5 @@
-import type { AnyDatahouse } from "@datahouse/core";
-import { createClient } from "@datahouse/client";
+import type { AnyDatahouse } from "@datahousejs/core";
+import { createClient } from "@datahousejs/client";
 
 type StudioConfig = AnyDatahouse;
 

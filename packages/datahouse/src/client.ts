@@ -1,1 +1,1 @@
-export * from "@datahouse/client";
+export * from "@datahousejs/client";
