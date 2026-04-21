@@ -2,18 +2,15 @@ import {
   pgTable,
   text,
   timestamp,
-  varchar,
   unique,
+  uuid,
 } from "drizzle-orm/pg-core";
-import { nanoid } from "nanoid";
 import { superjsonb } from "./superjsonb";
 
 export const sources = pgTable(
   "sources",
   {
-    id: varchar("id")
-      .$defaultFn(() => `src_${nanoid()}`)
-      .primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     extractorId: text("extractor_id").notNull(),
     key: text("key").notNull(),
     config: superjsonb("config"),

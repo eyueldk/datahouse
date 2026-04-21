@@ -2,8 +2,6 @@ import { command, option, number, string } from "cmd-ts";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = fileURLToPath(new URL("..", import.meta.url));
-
 export const studio = command({
   name: "studio",
   args: {

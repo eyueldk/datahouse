@@ -1,7 +1,7 @@
 CREATE TABLE "datalake" (
-	"id" varchar PRIMARY KEY NOT NULL,
-	"run_id" varchar NOT NULL,
-	"source_id" varchar NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"run_id" uuid NOT NULL,
+	"source_id" uuid NOT NULL,
 	"extractor_id" text NOT NULL,
 	"key" text NOT NULL,
 	"data" jsonb NOT NULL,
@@ -10,9 +10,9 @@ CREATE TABLE "datalake" (
 );
 --> statement-breakpoint
 CREATE TABLE "datawarehouse" (
-	"id" varchar PRIMARY KEY NOT NULL,
-	"run_id" varchar NOT NULL,
-	"datalake_id" varchar NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"run_id" uuid NOT NULL,
+	"datalake_id" uuid NOT NULL,
 	"transformer_id" text NOT NULL,
 	"collection" text NOT NULL,
 	"key" text NOT NULL,
@@ -30,21 +30,21 @@ CREATE TABLE "datawarehouse_tombstones" (
 );
 --> statement-breakpoint
 CREATE TABLE "files" (
-	"id" varchar PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"key" text NOT NULL,
 	"name" text NOT NULL,
 	"mime_type" text,
 	"size" integer,
 	"checksum" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"datalake_id" varchar,
-	"datawarehouse_id" varchar,
+	"datalake_id" uuid,
+	"datawarehouse_id" uuid,
 	CONSTRAINT "files_key_unique" UNIQUE("key"),
 	CONSTRAINT "files_one_record_kind" CHECK (("files"."datalake_id" IS NULL) OR ("files"."datawarehouse_id" IS NULL))
 );
 --> statement-breakpoint
 CREATE TABLE "runs" (
-	"id" varchar PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"type" text NOT NULL,
 	"status" text NOT NULL,
 	"error" text,
@@ -53,7 +53,7 @@ CREATE TABLE "runs" (
 );
 --> statement-breakpoint
 CREATE TABLE "sources" (
-	"id" varchar PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"extractor_id" text NOT NULL,
 	"key" text NOT NULL,
 	"config" jsonb,

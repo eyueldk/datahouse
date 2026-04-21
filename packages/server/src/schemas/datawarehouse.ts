@@ -2,10 +2,9 @@ import {
   pgTable,
   text,
   timestamp,
-  varchar,
   unique,
+  uuid,
 } from "drizzle-orm/pg-core";
-import { nanoid } from "nanoid";
 import { runs } from "./runs";
 import { datalake } from "./datalake";
 import { superjsonb } from "./superjsonb";
@@ -13,13 +12,11 @@ import { superjsonb } from "./superjsonb";
 export const datawarehouse = pgTable(
   "datawarehouse",
   {
-    id: varchar("id")
-      .$defaultFn(() => `dwh_${nanoid()}`)
-      .primaryKey(),
-    runId: varchar("run_id")
+    id: uuid("id").defaultRandom().primaryKey(),
+    runId: uuid("run_id")
       .notNull()
       .references(() => runs.id, { onDelete: "cascade" }),
-    datalakeId: varchar("datalake_id")
+    datalakeId: uuid("datalake_id")
       .notNull()
       .references(() => datalake.id, { onDelete: "cascade" }),
     transformerId: text("transformer_id").notNull(),

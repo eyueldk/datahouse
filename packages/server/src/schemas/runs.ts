@@ -1,13 +1,10 @@
-import { pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
-import { nanoid } from "nanoid";
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export type RunType = "extract" | "transform";
 export type RunStatus = "running" | "completed" | "failed";
 
 export const runs = pgTable("runs", {
-  id: varchar("id")
-    .$defaultFn(() => `run_${nanoid()}`)
-    .primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   type: text("type").$type<RunType>().notNull(),
   status: text("status").$type<RunStatus>().notNull(),
   error: text("error"),
