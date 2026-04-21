@@ -108,7 +108,7 @@ export const transformQueue = queueBackend.register<
     } catch (error) {
       await failRun({
         runId: run.id,
-        error: String(error),
+        error,
       });
       throw error;
     }

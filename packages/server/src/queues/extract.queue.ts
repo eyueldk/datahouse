@@ -122,7 +122,7 @@ export const extractQueue = queueBackend.register<
     } catch (error) {
       await failRun({
         runId: run.id,
-        error: error instanceof Error ? error.message : String(error),
+        error,
       });
       throw error;
     }

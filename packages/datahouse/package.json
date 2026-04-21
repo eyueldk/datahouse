@@ -1,6 +1,6 @@
 {
   "name": "datahouse",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "repository": "https://github.com/eyueldk/datahouse",
   "private": false,

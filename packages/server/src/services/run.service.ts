@@ -22,12 +22,17 @@ export async function completeRun(params: { runId: string }) {
     .where(eq(runs.id, params.runId));
 }
 
-export async function failRun(params: { runId: string; error: string }) {
+export async function failRun(params: { runId: string; error: unknown }) {
+  const errorText =
+    params.error instanceof Error
+      ? params.error.message
+      : JSON.stringify(params.error, null, 2);
+
   await db
     .update(runs)
     .set({
       status: "failed",
-      error: params.error,
+      error: errorText,
       completedAt: new Date(),
     })
     .where(eq(runs.id, params.runId));
