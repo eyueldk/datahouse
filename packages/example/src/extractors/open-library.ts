@@ -56,11 +56,17 @@ export const openLibraryExtractor = createExtractor({
 
     const payload = (await response.json()) as OpenLibrarySearchResponse;
     const docs = payload.docs ?? [];
+    const fetchedAt = new Date().toISOString();
 
     yield {
       items: docs.map((doc, index) => ({
         key: doc.key ?? `open-library-${index}`,
         data: doc,
+        metadata: {
+          upstream: "open-library",
+          searchQuery: config.query,
+          fetchedAt,
+        },
       })),
     };
   },

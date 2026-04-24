@@ -20,12 +20,18 @@ export type CollectionData<
 export type TransformBatch<TCollection extends AnyCollection> = {
   [K in TCollection["id"]]: {
     collection: K;
-    items: Array<{ key: string; data: CollectionData<TCollection, K> }>;
+    items: Array<{
+      key: string;
+      data: CollectionData<TCollection, K>;
+      metadata?: Record<string, any>;
+    }>;
   };
 }[TCollection["id"]];
 
 export interface TransformContext<TInput> {
   data: TInput;
+  /** Arbitrary metadata from the source datalake row (extractor output); string keys, any values. */
+  metadata: Record<string, any>;
   upload: (params: {
     content: Buffer;
     name?: string;

@@ -1,8 +1,8 @@
 {
   "name": "@datahousejs/client",
-  "version": "0.2.5",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "0.2.7",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "type": "module",
   "private": false,
   "description": "Datahouse client library",
@@ -11,20 +11,24 @@
     "dist"
   ],
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "build": "bunup",
-    "dev": "bunup --watch"
+    "build": "tsdown",
+    "dev": "tsdown --watch"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@typescript/native-preview": "^7.0.0-dev.20260403.1",
-    "bunup": "^0.16.31"
+    "tsdown": "0.21.10"
   },
   "peerDependencies": {
     "typescript": "^5"

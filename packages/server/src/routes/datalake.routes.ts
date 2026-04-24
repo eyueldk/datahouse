@@ -1,5 +1,8 @@
 import { Elysia, t } from "elysia";
-import { paginateDatalakeRecords } from "../services/datalake.service";
+import {
+  deleteDatalakeRecord,
+  paginateDatalakeRecords,
+} from "../services/datalake.service";
 import { enqueueTransformations } from "../services/transform-enqueue.service";
 
 const RecordResponse = t.Object({
@@ -9,6 +12,7 @@ const RecordResponse = t.Object({
   extractorId: t.String(),
   key: t.String(),
   data: t.Any(),
+  metadata: t.Any(),
   createdAt: t.Date(),
 });
 
@@ -37,19 +41,15 @@ const DatalakeTransformBodyRequest = t.Object({
   transformerIds: t.Optional(t.Array(t.String())),
 });
 
-const ErrorResponse = t.Object({
-  error: t.String(),
-});
-
 const TriggerTransformsResponse = t.Object({
   jobId: t.String(),
   enqueued: t.Numeric(),
   runIds: t.Array(t.String()),
 });
 
-export const datalakeRoutes = new Elysia()
+export const datalakeRoutes = new Elysia({ tags: ["Datalake"] })
   .get(
-    "/datalake",
+    "/datalake-records",
     async ({ query, status }) => {
       const limit = Math.max(1, query.limit ?? 50);
       const offset = Math.max(0, query.offset ?? 0);
@@ -72,40 +72,37 @@ export const datalakeRoutes = new Elysia()
       },
     },
   )
+  .delete(
+    "/datalake-records/:id",
+    async ({ params: { id }, status }) => {
+      await deleteDatalakeRecord({ id });
+      return status(204, "");
+    },
+    {
+      params: DatalakeIdParamsRequest,
+      response: {
+        204: t.String(),
+      },
+    },
+  )
   .post(
-    "/datalake/:id/transform",
+    "/datalake-records/:id/transform",
     async ({ params: { id }, body, status }) => {
-      try {
-        const result = await enqueueTransformations({
-          datalakeRecordId: id,
-          transformerIds: body?.transformerIds,
-        });
-        if (result.enqueued === 0) {
-          return status(400, {
-            error:
-              "No transform jobs were enqueued. Check extractor pipelines or transformerIds.",
-          });
-        }
-        return status(200, {
-          jobId: result.runIds[0] ?? "",
-          enqueued: result.enqueued,
-          runIds: result.runIds,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (msg.includes("not found")) {
-          return status(404, { error: msg });
-        }
-        return status(400, { error: msg });
-      }
+      const result = await enqueueTransformations({
+        datalakeRecordId: id,
+        transformerIds: body?.transformerIds,
+      });
+      return status(200, {
+        jobId: result.runIds[0] ?? "",
+        enqueued: result.enqueued,
+        runIds: result.runIds,
+      });
     },
     {
       params: DatalakeIdParamsRequest,
       body: DatalakeTransformBodyRequest,
       response: {
         200: TriggerTransformsResponse,
-        400: ErrorResponse,
-        404: ErrorResponse,
       },
     },
   );

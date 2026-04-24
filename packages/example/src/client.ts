@@ -4,7 +4,7 @@ import type {
   CollectionFromDatahouse,
   CollectionIdFromDatahouse,
   Prettify,
-} from "@datahousejs/client/types";
+} from "@datahousejs/client";
 import datahouse from "./index";
 
 export type ExampleCollectionIds = CollectionIdFromDatahouse<typeof datahouse>;
@@ -19,13 +19,12 @@ export type ExampleDatawarehouseDataByCollectionId = {
   >;
 };
 
-export const client = createClient({
-  domain: "http://localhost:2510",
-  datahouse,
+export const client = createClient<typeof datahouse>({
+  baseUrl: "http://localhost:2510",
 });
 
 export async function listBookRows() {
-  for await (const page of client.datawarehouse.records({
+  for await (const page of client.datawarehouseRecords.pages({
     collection: "books",
     limit: 50,
   })) {
@@ -39,7 +38,7 @@ export async function listBookRows() {
 
 export async function listAllBookRows() {
   const rows = [];
-  for await (const page of client.datawarehouse.records({
+  for await (const page of client.datawarehouseRecords.pages({
     collection: "books",
   })) {
     for (const row of page.items) {

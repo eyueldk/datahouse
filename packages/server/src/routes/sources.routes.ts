@@ -79,7 +79,7 @@ function withExtractorSchema<
   };
 }
 
-export const sourceRoutes = new Elysia()
+export const sourceRoutes = new Elysia({ tags: ["Sources"] })
   .get(
     "/sources",
     async ({ query, status }) => {
@@ -105,38 +105,39 @@ export const sourceRoutes = new Elysia()
   .post(
     "/sources",
     async ({ body, status }) => {
-      try {
-        const pipeline = datahouse.pipelines.find(
-          (p) => p.extractor.id === body.extractorId,
-        );
-        if (!pipeline) {
-          return status(400, {
-            error: `Extractor ${body.extractorId} not found`,
-          });
-        }
-
-        const extractorInput =
-          await pipeline.extractor.config.schema.parseAsync(body.config);
-        const sourceDefinition =
-          await pipeline.extractor.config.create(extractorInput);
-        const source = await createSource({
-          extractorId: body.extractorId,
-          key: sourceDefinition.key,
-          config: sourceDefinition.config,
+      const pipeline = datahouse.pipelines.find(
+        (p) => p.extractor.id === body.extractorId,
+      );
+      if (!pipeline) {
+        return status(400, {
+          error: `Extractor ${body.extractorId} not found`,
         });
-        if (!source) {
-          return status(400, { error: "Failed to create source" });
-        }
-        await setupExtractCronJob({ source });
-        return status(201, withExtractorSchema(source));
-      } catch (err) {
-        return status(400, { error: String(err) });
       }
+
+      const parsed = await pipeline.extractor.config.schema.safeParseAsync(
+        body.config,
+      );
+      if (!parsed.success) {
+        return status(400, { error: String(parsed.error) });
+      }
+
+      const sourceDefinition =
+        await pipeline.extractor.config.create(parsed.data);
+      const source = await createSource({
+        extractorId: body.extractorId,
+        key: sourceDefinition.key,
+        config: sourceDefinition.config,
+      });
+      if (!source) {
+        return status(400, { error: "Failed to create source" });
+      }
+      await setupExtractCronJob({ source });
+      return status(200, withExtractorSchema(source));
     },
     {
       body: CreateSourceBodyRequest,
       response: {
-        201: SourceResponse,
+        200: SourceResponse,
         400: ErrorResponse,
       },
     },
@@ -144,12 +145,11 @@ export const sourceRoutes = new Elysia()
   .get(
     "/sources/:id",
     async ({ params: { id }, status }) => {
-      try {
-        const source = await findSource({ id });
-        return status(200, withExtractorSchema(source));
-      } catch {
+      const source = await findSource({ id });
+      if (!source) {
         return status(404, { error: `Source ${id} not found.` });
       }
+      return status(200, withExtractorSchema(source));
     },
     {
       params: SourceParamsRequest,
@@ -180,37 +180,31 @@ export const sourceRoutes = new Elysia()
   .delete(
     "/sources/:id",
     async ({ params: { id }, status }) => {
-      try {
-        await deleteSource(id);
-        return status(204, "");
-      } catch (err) {
-        return status(400, { error: String(err) });
-      }
+      await deleteSource(id);
+      return status(204, "");
     },
     {
       params: SourceParamsRequest,
       response: {
         204: t.String(),
-        400: ErrorResponse,
       },
     },
   )
   .post(
     "/sources/:id/extract",
     async ({ params: { id }, status }) => {
-      try {
-        const source = await findSource({ id });
-        const run = await createRun({ type: "extract" });
-        await extractQueue.enqueue({
-          data: { sourceId: source.id, runId: run.id },
-        });
-        return status(200, {
-          sourceId: source.id,
-          jobId: run.id,
-        });
-      } catch {
+      const source = await findSource({ id });
+      if (!source) {
         return status(404, { error: `Source ${id} not found.` });
       }
+      const run = await createRun({ type: "extract" });
+      await extractQueue.enqueue({
+        data: { sourceId: source.id, runId: run.id },
+      });
+      return status(200, {
+        sourceId: source.id,
+        jobId: run.id,
+      });
     },
     {
       params: SourceParamsRequest,

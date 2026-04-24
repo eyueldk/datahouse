@@ -1,13 +1,13 @@
 {
   "name": "example",
-  "version": "0.2.5",
+  "version": "0.2.7",
   "type": "module",
   "private": true,
   "description": "Example Datahouse project",
   "scripts": {
     "check": "tsc --noEmit",
     "studio": "datahouse studio",
-    "serve": "datahouse serve ./src/index.ts"
+    "start": "rimraf .datahouse && datahouse serve ./src/index.ts"
   },
   "dependencies": {
     "@datahousejs/client": "workspace:*",
@@ -16,7 +16,8 @@
     "zod": "4.3.5"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "rimraf": "^6.1.3"
   },
   "peerDependencies": {
     "typescript": "^5"

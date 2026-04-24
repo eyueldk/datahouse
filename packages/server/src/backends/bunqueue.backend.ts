@@ -39,7 +39,7 @@ export function createBunqueueBackend(
   return createQueueBackend({
     register<TData, TResult>(
       params: RegisterQueueParams<TData, TResult>,
-    ): RegisteredQueue<TData, TResult> {
+    ): RegisteredQueue<TData> {
       const { name, execute } = params;
 
       const queue = new Queue<TData>(name, { ...clientOptions });

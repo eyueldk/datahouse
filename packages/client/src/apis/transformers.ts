@@ -1,26 +1,24 @@
 import { unwrapData } from "../utils";
-import type { TreatyClient } from "../utils/treaty.ts";
+import type { EdenFetchClient } from "../utils/eden.ts";
 
 export interface TransformerRef {
   id: string;
 }
 
-export interface TransformersClient {
-  list(params?: { extractorId?: string }): Promise<{ items: TransformerRef[] }>;
-}
+export class TransformersClient {
+  constructor(private client: EdenFetchClient) {}
 
-export function createTransformersClient(
-  client: TreatyClient,
-): TransformersClient {
-  const tc = client;
-  return {
-    async list(params = {}) {
-      const response = await tc.api.transformers.get({
-        query: {
-          extractorId: params.extractorId,
-        },
-      });
-      return unwrapData(response, "Failed to list transformers");
-    },
-  };
+  async list(
+    params: {
+      extractorId?: string;
+    } = {},
+  ) {
+    const response = await this.client("/api/transformers", {
+      method: "GET",
+      query: {
+        extractorId: params.extractorId,
+      },
+    });
+    return unwrapData(response, "Failed to list transformers");
+  }
 }

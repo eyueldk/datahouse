@@ -1,6 +1,5 @@
 import { paginate, unwrapData } from "../utils";
-import type { TreatyClient } from "../utils/treaty.ts";
-import type { PaginatedResponse } from "../types";
+import type { EdenFetchClient } from "../utils/eden.ts";
 
 export interface ExtractSourceResult {
   sourceId: string;
@@ -17,85 +16,97 @@ export interface SourceRecord {
   createdAt: Date;
 }
 
-export interface SourcesClient {
-  list(params?: {
-    extractorId?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<PaginatedResponse<SourceRecord>>;
-  pages(params?: {
-    extractorId?: string;
-    limit?: number;
-    offset?: number;
-  }): AsyncGenerator<PaginatedResponse<SourceRecord>, void, undefined>;
-  get(params: { id: string }): Promise<SourceRecord>;
-  create(params: {
-    extractorId: string;
-    config?: unknown;
-  }): Promise<SourceRecord>;
-  update(params: {
+export class SourcesClient {
+  constructor(private client: EdenFetchClient) {}
+
+  async list(
+    params: {
+      extractorId?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) {
+    const response = await this.client("/api/sources", {
+      method: "GET",
+      query: {
+        extractorId: params.extractorId,
+        limit: params.limit,
+        offset: params.offset,
+      },
+    });
+    return unwrapData(response, "Failed to list sources");
+  }
+
+  pages(
+    params: {
+      extractorId?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) {
+    return paginate(
+      ({ limit, offset }) =>
+        this.list({
+          extractorId: params.extractorId,
+          limit,
+          offset,
+        }),
+      params,
+    );
+  }
+
+  async get(params: { id: string }) {
+    const response = await this.client("/api/sources/:id", {
+      method: "GET",
+      params: { id: params.id },
+    });
+    return unwrapData(response, `Failed to get source ${params.id}`);
+  }
+
+  async create(params: { extractorId: string; config?: unknown }) {
+    const response = await this.client("/api/sources", {
+      method: "POST",
+      body: params,
+    });
+    return unwrapData(response, "Failed to create source");
+  }
+
+  async update(params: {
     id: string;
     extractorId?: string;
     key?: string;
     config?: unknown;
     cursor?: unknown;
-  }): Promise<SourceRecord>;
-  remove(params: { id: string }): Promise<void>;
-  extract(params: { id: string }): Promise<ExtractSourceResult>;
-}
+  }) {
+    const { id, ...body } = params;
+    const response = await this.client("/api/sources/:id", {
+      method: "PATCH",
+      params: { id },
+      body,
+    });
+    return unwrapData(response, `Failed to update source ${id}`);
+  }
 
-export function createSourcesClient(client: TreatyClient): SourcesClient {
-  return {
-    async list(params = {}) {
-      const response = await client.api.sources.get({
-        query: {
-          extractorId: params.extractorId,
-          limit: params.limit,
-          offset: params.offset,
-        },
-      });
-      return unwrapData(response, "Failed to list sources");
-    },
-    pages(params = {}) {
-      return paginate(
-        ({ limit, offset }) =>
-          this.list({
-            extractorId: params.extractorId,
-            limit,
-            offset,
-          }),
-        params,
+  async delete(params: { id: string }) {
+    const response = await this.client("/api/sources/:id", {
+      method: "DELETE",
+      params: { id: params.id },
+    });
+    if (response.error) {
+      throw new Error(
+        `Failed to delete source ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
       );
-    },
-    async get(params) {
-      const response = await client.api.sources({ id: params.id }).get();
-      return unwrapData(response, `Failed to get source ${params.id}`);
-    },
-    async create(params) {
-      const response = await client.api.sources.post(params);
-      return unwrapData(response, "Failed to create source");
-    },
-    async update(params) {
-      const { id, ...body } = params;
-      const response = await client.api.sources({ id }).patch(body);
-      return unwrapData(response, `Failed to update source ${id}`);
-    },
-    async remove(params) {
-      const response = await client.api.sources({ id: params.id }).delete();
-      if (response.error) {
-        throw new Error(
-          `Failed to delete source ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
-        );
-      }
-    },
-    async extract(params) {
-      const response = await client.api
-        .sources({ id: params.id })
-        .extract.post();
-      return unwrapData(
-        response,
-        `Failed to enqueue extract for source ${params.id}`,
-      );
-    },
-  };
+    }
+  }
+
+  async extract(params: { id: string }) {
+    const response = await this.client("/api/sources/:id/extract", {
+      method: "POST",
+      params: { id: params.id },
+    });
+    return unwrapData(
+      response,
+      `Failed to enqueue extract for source ${params.id}`,
+    );
+  }
 }

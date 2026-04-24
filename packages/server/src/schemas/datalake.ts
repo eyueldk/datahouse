@@ -14,5 +14,9 @@ export const datalake = pgTable("datalake", {
   extractorId: text("extractor_id").notNull(),
   key: text("key").notNull().unique(),
   data: superjsonb("data").notNull(),
+  metadata: superjsonb("metadata")
+    .$type<Record<string, any>>()
+    .notNull()
+    .default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

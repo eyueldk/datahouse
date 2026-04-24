@@ -36,7 +36,7 @@ export const openLibraryTransformer = createTransformer({
   id: "open-library-transformer",
   extractor: openLibraryExtractor,
   collections: [booksCollection],
-  async *transform({ data }) {
+  async *transform({ data, metadata }) {
     const bookId = getOpenLibraryId(data.key);
     const unifiedBook: UnifiedBook = {
       id: `openlibrary:${bookId}`,
@@ -54,6 +54,12 @@ export const openLibraryTransformer = createTransformer({
         {
           key: unifiedBook.id,
           data: unifiedBook,
+          metadata: {
+            transformerId: "open-library-transformer",
+            datalakeUpstream: metadata.upstream,
+            datalakeFetchedAt: metadata.fetchedAt,
+            openLibraryWorkKey: data.key ?? null,
+          },
         },
       ],
     };

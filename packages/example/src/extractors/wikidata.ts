@@ -75,11 +75,17 @@ export const wikidataExtractor = createExtractor({
 
     const payload = (await response.json()) as WikidataSparqlResponse;
     const bindings = payload.results?.bindings ?? [];
+    const fetchedAt = new Date().toISOString();
 
     yield {
       items: bindings.map((binding, index) => ({
         key: binding.book?.value ?? `wikidata-book-${index}`,
         data: binding,
+        metadata: {
+          upstream: "wikidata",
+          sparqlLimit: config.limit,
+          fetchedAt,
+        },
       })),
     };
   },

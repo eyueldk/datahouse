@@ -23,7 +23,7 @@ const ListExtractorsQueryRequest = t.Object({
   offset: t.Optional(t.Numeric()),
 });
 
-export const extractorRoutes = new Elysia().get(
+export const extractorRoutes = new Elysia({ tags: ["Extractors"] }).get(
   "/extractors",
   ({ query, status }) => {
     const limit = Math.max(1, query.limit ?? 50);

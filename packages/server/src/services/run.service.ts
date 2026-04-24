@@ -71,5 +71,5 @@ export async function findRun(params: { id: string }) {
     .from(runs)
     .where(eq(runs.id, params.id))
     .limit(1);
-  return row;
+  return row ?? null;
 }

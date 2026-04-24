@@ -1,8 +1,9 @@
 import * as jsf from "json-schema-faker";
-import { Play } from "lucide-react";
+import { Play, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { toastQueuedRun } from "#/lib/job-toast";
 import { type ColumnDef } from "@tanstack/react-table";
 import { JsonSchemaForm } from "#/components/json-schema-form";
@@ -24,6 +25,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "#/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "#/components/ui/sheet";
 import { Label } from "#/components/ui/label";
 import {
   Select,
@@ -61,6 +69,9 @@ function SourcesPage() {
   const { sources, extractors } = Route.useLoaderData();
   const [open, setOpen] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [inspectSource, setInspectSource] = useState<(typeof sources)[0] | null>(
+    null,
+  );
 
   const getExtractorById = (extractorId: string) =>
     extractors.find((extractor) => extractor.id === extractorId);
@@ -99,17 +110,24 @@ function SourcesPage() {
     });
   };
 
+  const navigate = useNavigate();
+
   const extractFromSource = async (id: string) => {
     setStatusError(null);
     const result = await extractSource({ data: { id } });
-    toastQueuedRun(router, result.jobId, "extract", "Extract run queued");
+    toastQueuedRun(navigate, result.jobId, "extract", "Extract run queued");
     await router.invalidate();
   };
 
   const handleDeleteSource = async (id: string) => {
     setStatusError(null);
-    await deleteSource({ data: { id } });
-    await router.invalidate();
+    try {
+      await deleteSource({ data: { id } });
+      toast.success("Source deleted");
+      await router.invalidate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
   const columns: ColumnDef<any>[] = [
@@ -134,24 +152,39 @@ function SourcesPage() {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1">
           <Button
             type="button"
-            variant="secondary"
             size="icon"
+            variant="ghost"
             className="shrink-0"
-            aria-label="Run extraction for this source"
+            aria-label="Run extraction"
             title="Run extraction"
             onClick={() => void extractFromSource(row.original.id)}
           >
             <Play className="size-4" aria-hidden />
           </Button>
           <Button
-            variant="destructive"
-            size="sm"
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+            aria-label="Inspect source"
+            title="Inspect source"
+            onClick={() => setInspectSource(row.original)}
+          >
+            <Search className="size-4" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Delete source"
+            title="Delete source"
             onClick={() => void handleDeleteSource(row.original.id)}
           >
-            Delete
+            <Trash2 className="size-4" aria-hidden />
           </Button>
         </div>
       ),
@@ -159,6 +192,7 @@ function SourcesPage() {
   ];
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
@@ -312,6 +346,70 @@ function SourcesPage() {
         <DataTable columns={columns} data={sources} />
       </CardContent>
     </Card>
+
+      <Sheet
+        open={inspectSource !== null}
+        onOpenChange={(next) => !next && setInspectSource(null)}
+      >
+        <SheetContent
+          side="right"
+          className="w-full overflow-hidden sm:max-w-xl"
+        >
+          <SheetHeader>
+            <SheetTitle>Source details</SheetTitle>
+            <SheetDescription>
+              Configuration and metadata for this source.
+            </SheetDescription>
+          </SheetHeader>
+          {inspectSource ? (
+            <div className="grid flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
+              <SourceDetail label="ID" value={inspectSource.id} />
+              <SourceDetail label="Extractor ID" value={inspectSource.extractorId} />
+              <SourceDetail label="Key" value={inspectSource.key} />
+              <SourceDetail
+                label="Created At"
+                value={new Date(inspectSource.createdAt).toLocaleString()}
+              />
+              <div className="grid gap-2">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Config
+                </p>
+                <pre className="max-h-[40vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                  {JSON.stringify(inspectSource.config, null, 2)}
+                </pre>
+              </div>
+              <div className="grid gap-2">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Cursor
+                </p>
+                <pre className="max-h-[24vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                  {JSON.stringify(inspectSource.cursor, null, 2)}
+                </pre>
+              </div>
+              <div className="grid gap-2">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Schema
+                </p>
+                <pre className="max-h-[32vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                  {JSON.stringify(inspectSource.schema, null, 2)}
+                </pre>
+              </div>
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
+function SourceDetail(props: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1">
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {props.label}
+      </p>
+      <p className="break-all">{props.value}</p>
+    </div>
   );
 }
 

@@ -37,7 +37,7 @@ const ErrorResponse = t.Object({
   error: t.String(),
 });
 
-export const runRoutes = new Elysia()
+export const runRoutes = new Elysia({ tags: ["Runs"] })
   .get(
     "/runs",
     async ({ query, status }) => {

@@ -45,6 +45,19 @@ export const transformQueue = queueBackend.register<
     }
 
     const datalakeRecord = await findDatalakeRecord({ id: datalakeRecordId });
+    if (!datalakeRecord) {
+      console.error(
+        `[transform] Datalake record not found: ${datalakeRecordId}`,
+      );
+      if (data.runId) {
+        await failRun({
+          runId: data.runId,
+          error: `Datalake record not found: ${datalakeRecordId}`,
+        });
+      }
+      return { transformed };
+    }
+
     await deleteDatawarehouseRecordsForDatalakeTransformer({
       datalakeId: datalakeRecordId,
       transformerId,
@@ -53,7 +66,11 @@ export const transformQueue = queueBackend.register<
     if (data.runId) {
       const existing = await findRun({ id: data.runId });
       if (!existing) {
-        throw new Error(`Run ${data.runId} not found`);
+        await failRun({
+          runId: data.runId,
+          error: `Run ${data.runId} not found`,
+        });
+        return { transformed };
       }
       run = existing;
     } else {
@@ -63,6 +80,7 @@ export const transformQueue = queueBackend.register<
     try {
       for await (const batch of pipeline.transformer.transform({
         data: datalakeRecord.data,
+        metadata: datalakeRecord.metadata,
         upload: async (params) => {
           const uploaded = await uploadFile({
             content: params.content,
@@ -98,6 +116,7 @@ export const transformQueue = queueBackend.register<
             collection,
             key: item.key,
             data: item.data,
+            metadata: item.metadata ?? {},
           })),
         });
       }

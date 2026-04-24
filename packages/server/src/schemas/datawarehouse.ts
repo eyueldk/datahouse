@@ -23,6 +23,10 @@ export const datawarehouse = pgTable(
     collection: text("collection").notNull(),
     key: text("key").notNull(),
     data: superjsonb("data").notNull(),
+    metadata: superjsonb("metadata")
+      .$type<Record<string, any>>()
+      .notNull()
+      .default({}),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

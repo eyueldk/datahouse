@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
-import { Play } from "lucide-react";
+import { Play, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Button } from "#/components/ui/button";
@@ -38,6 +38,7 @@ import {
 } from "#/components/ui/sheet";
 import type { DatalakeRecord } from "@datahousejs/client";
 import {
+  deleteDatalakeRecord,
   listDatalake,
   listTransformers,
   transformDatalake,
@@ -46,7 +47,7 @@ import { toastQueuedTransformBatch } from "#/lib/job-toast";
 
 export const Route = createFileRoute("/datalake")({
   loader: async () => {
-    const { items } = await listDatalake();
+    const { items } = await listDatalake({ data: {} });
     return { records: items };
   },
   component: DatalakePage,
@@ -114,6 +115,8 @@ function DatalakePage() {
     });
   }
 
+  const navigate = useNavigate();
+
   async function submitTransform() {
     if (!transformRecord) return;
     if (selectedTransformerIds.size === 0) {
@@ -132,7 +135,7 @@ function DatalakePage() {
         },
       });
       setTransformRecord(null);
-      toastQueuedTransformBatch(router, r.runIds, r.enqueued);
+      toastQueuedTransformBatch(navigate, r.runIds, r.enqueued);
       await router.invalidate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
@@ -155,24 +158,49 @@ function DatalakePage() {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1">
           <Button
             type="button"
             size="icon"
-            variant="outline"
+            variant="ghost"
             className="shrink-0"
-            aria-label="Run transforms for this datalake record"
+            aria-label="Run transforms"
             title="Run transforms"
             onClick={() => setTransformRecord(row.original)}
           >
             <Play className="size-4" aria-hidden />
           </Button>
           <Button
-            size="sm"
-            variant="secondary"
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+            aria-label="Inspect record"
+            title="Inspect record"
             onClick={() => setSelectedRecord(row.original)}
           >
-            Inspect
+            <Search className="size-4" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Delete record"
+            title="Delete record"
+            onClick={() => {
+              void (async () => {
+                try {
+                  await deleteDatalakeRecord({ data: { id: row.original.id } });
+                  toast.success("Datalake record deleted");
+                  await router.invalidate();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : String(e));
+                }
+              })();
+            }}
+          >
+            <Trash2 className="size-4" aria-hidden />
           </Button>
         </div>
       ),
@@ -322,6 +350,17 @@ function DatalakePage() {
                 label="Created At"
                 value={new Date(selectedRecord.createdAt).toLocaleString()}
               />
+
+              {Object.keys(selectedRecord.metadata).length > 0 ? (
+                <div className="grid gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Record metadata
+                  </p>
+                  <pre className="max-h-[32vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                    {JSON.stringify(selectedRecord.metadata, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
 
               <div className="grid gap-2">
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">

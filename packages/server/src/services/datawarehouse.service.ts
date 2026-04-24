@@ -115,7 +115,12 @@ export async function saveDatawarehouseRecords({
   runId: string;
   datalakeId: string;
   transformerId: string;
-  items: { collection: string; key: string; data: unknown }[];
+  items: {
+    collection: string;
+    key: string;
+    data: unknown;
+    metadata?: Record<string, any>;
+  }[];
 }) {
   if (items.length === 0) return;
 
@@ -150,6 +155,7 @@ export async function saveDatawarehouseRecords({
     collection: item.collection,
     key: item.key,
     data: item.data,
+    metadata: item.metadata ?? {},
   }));
 
   const returned = await db
@@ -165,7 +171,7 @@ export async function saveDatawarehouseRecords({
         ),
         collection: sql.raw(`excluded.${datawarehouse.collection.name}`),
         data: sql.raw(`excluded.${datawarehouse.data.name}`),
-        updatedAt: sql`now()`,
+        metadata: sql.raw(`excluded.${datawarehouse.metadata.name}`),
       },
     })
     .returning();
@@ -302,4 +308,23 @@ export async function paginateDatawarehouseRecords(params: {
       total: Number(countResult[0]?.total ?? 0),
     },
   };
+}
+
+export async function deleteDatawarehouseRecordById(params: { id: string }) {
+  const [rec] = await db
+    .select()
+    .from(datawarehouse)
+    .where(eq(datawarehouse.id, params.id))
+    .limit(1);
+  if (!rec) return;
+  await upsertDatawarehouseTombstones([
+    { collection: rec.collection, key: rec.key },
+  ]);
+  await syncFileLinks({
+    kind: "datawarehouse",
+    recordId: rec.id,
+    previousData: rec.data,
+    nextData: {},
+  });
+  await db.delete(datawarehouse).where(eq(datawarehouse.id, params.id));
 }

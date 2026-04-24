@@ -17,7 +17,7 @@ export interface QueueUnscheduleParams {
 }
 
 /** Handle for a registered named queue (enqueue / schedule / unschedule). */
-export interface RegisteredQueue<TData, TResult> {
+export interface RegisteredQueue<TData> {
   enqueue(params: QueueEnqueueParams<TData>): Promise<void>;
   schedule(params: QueueScheduleParams<TData>): Promise<void>;
   unschedule(params: QueueUnscheduleParams): Promise<void>;
@@ -31,7 +31,7 @@ export interface RegisterQueueParams<TData, TResult> {
 export type QueueBackend = {
   register: <TData, TResult>(
     params: RegisterQueueParams<TData, TResult>,
-  ) => RegisteredQueue<TData, TResult>;
+  ) => RegisteredQueue<TData>;
 };
 
 export function createQueueBackend<TImpl extends QueueBackend>(

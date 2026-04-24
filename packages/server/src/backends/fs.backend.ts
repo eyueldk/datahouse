@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { unlink } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import {
   createFilesBackend,
   type FilesBackend,
@@ -27,15 +27,10 @@ export function createFSBackend(options: FSBackendOptions): FilesBackend {
     async write(
       key: string,
       data: Blob | Buffer,
-      opts?: FilesWriteOptions,
+      _opts?: FilesWriteOptions,
     ): Promise<void> {
       const path = getPath(key);
-      mkdirSync(dirname(path), { recursive: true });
-      const payload =
-        opts?.mimeType != null && Buffer.isBuffer(data)
-          ? new Blob([data], { type: opts.mimeType })
-          : data;
-      await Bun.write(path, payload);
+      await Bun.write(path, data);
     },
 
     async read(key: string): Promise<Buffer> {

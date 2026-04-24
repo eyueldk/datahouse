@@ -1,8 +1,9 @@
+import { Search, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Button } from "#/components/ui/button";
 import {
   Card,
   CardContent,
@@ -27,7 +28,9 @@ import {
   SheetTitle,
 } from "#/components/ui/sheet";
 import type { DatawarehouseRecord } from "@datahousejs/client";
+import { Button } from "#/components/ui/button";
 import {
+  deleteDatawarehouseRecord,
   listDatawarehouseCollections,
   listDatawarehouseRecords,
 } from "#/lib/server-functions";
@@ -53,6 +56,7 @@ export const Route = createFileRoute("/datawarehouse")({
 });
 
 function DatawarehousePage() {
+  const router = useRouter();
   const { records } = Route.useLoaderData();
   const [selectedRecord, setSelectedRecord] =
     useState<DatawarehouseBrowseRecord | null>(null);
@@ -81,13 +85,43 @@ function DatawarehousePage() {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="text-right">
+        <div className="flex justify-end gap-1">
           <Button
-            size="sm"
-            variant="secondary"
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+            aria-label="Inspect record"
+            title="Inspect record"
             onClick={() => setSelectedRecord(row.original)}
           >
-            Inspect
+            <Search className="size-4" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Delete record"
+            title="Delete record"
+            onClick={() => {
+              void (async () => {
+                try {
+                  await deleteDatawarehouseRecord({
+                    data: { id: row.original.id },
+                  });
+                  toast.success("Data warehouse record deleted");
+                  setSelectedRecord((prev) =>
+                    prev?.id === row.original.id ? null : prev,
+                  );
+                  await router.invalidate();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : String(e));
+                }
+              })();
+            }}
+          >
+            <Trash2 className="size-4" aria-hidden />
           </Button>
         </div>
       ),
@@ -177,6 +211,17 @@ function DatawarehousePage() {
                 label="Created At"
                 value={new Date(selectedRecord.createdAt).toLocaleString()}
               />
+
+              {Object.keys(selectedRecord.metadata).length > 0 ? (
+                <div className="grid gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Record metadata
+                  </p>
+                  <pre className="max-h-[32vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                    {JSON.stringify(selectedRecord.metadata, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
 
               <div className="grid gap-2">
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">

@@ -69,10 +69,7 @@ export async function findDatalakeRecord(params: { id: string }) {
     .from(datalake)
     .where(eq(datalake.id, params.id))
     .limit(1);
-  if (!record) {
-    throw new Error(`Datalake record not found: ${params.id}`);
-  }
-  return record;
+  return record ?? null;
 }
 
 export async function saveDatalakeRecords({
@@ -84,7 +81,7 @@ export async function saveDatalakeRecords({
   runId: string;
   sourceId: string;
   extractorId: string;
-  items: { key: string; data: unknown }[];
+  items: { key: string; data: unknown; metadata?: Record<string, any> }[];
 }): Promise<{ id: string }[]> {
   if (items.length === 0) return [];
 
@@ -106,6 +103,7 @@ export async function saveDatalakeRecords({
     extractorId,
     key: item.key,
     data: item.data,
+    metadata: item.metadata ?? {},
   }));
 
   const returned = await (async () => {
@@ -120,37 +118,11 @@ export async function saveDatalakeRecords({
             sourceId: sql`excluded.${sql.identifier(datalake.sourceId.name)}`,
             extractorId: sql`excluded.${sql.identifier(datalake.extractorId.name)}`,
             data: sql`excluded.${sql.identifier(datalake.data.name)}`,
+            metadata: sql`excluded.${sql.identifier(datalake.metadata.name)}`,
           },
         })
         .returning();
     } catch (err) {
-      // #region agent log
-      const e = err as Error & { cause?: unknown };
-      fetch("http://127.0.0.1:7709/ingest/15fa5519-9483-4cbf-af55-01b271e12fe1", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "9a0798",
-        },
-        body: JSON.stringify({
-          sessionId: "9a0798",
-          hypothesisId: "H2",
-          location: "datalake.service.ts:saveDatalakeRecords:insertCatch",
-          message: "datalake insert failed",
-          data: {
-            errMessage: e?.message,
-            errCause:
-              e?.cause != null && typeof e.cause === "object" && "message" in e.cause
-                ? String((e.cause as Error).message)
-                : e?.cause != null
-                  ? String(e.cause)
-                  : null,
-            valueCount: values.length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       throw err;
     }
   })();
@@ -171,4 +143,16 @@ export async function saveDatalakeRecords({
   );
 
   return returned.map((rec) => ({ id: rec.id }));
+}
+
+export async function deleteDatalakeRecord(params: { id: string }) {
+  const record = await findDatalakeRecord(params);
+  if (!record) return;
+  await syncFileLinks({
+    kind: "datalake",
+    recordId: record.id,
+    previousData: record.data,
+    nextData: {},
+  });
+  await db.delete(datalake).where(eq(datalake.id, params.id));
 }

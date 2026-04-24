@@ -1,3 +1,4 @@
+import packagejson from "../package.json";
 import { PORT } from "./configs/core.config";
 import { server } from "./server";
 import { dbBackend } from "./configs/database.config";
@@ -7,5 +8,5 @@ await dbBackend.migrate();
 await setupCronJobs();
 server.listen(PORT);
 console.log(
-  `Datahouse server running at ${server.server?.hostname ?? "localhost"}:${server.server?.port}`,
+  `Datahouse server v${packagejson.version} running at ${server.server?.hostname ?? "localhost"}:${server.server?.port}`,
 );

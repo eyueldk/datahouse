@@ -61,6 +61,7 @@ export type DatawarehouseRecord<
   collection: TCollectionId;
   key: string;
   data: TCollectionData;
+  metadata: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }>;
@@ -73,6 +74,7 @@ export type DatalakeRecord = Prettify<{
   extractorId: string;
   key: string;
   data: object;
+  metadata: Record<string, any>;
   createdAt: Date;
 }>;
 

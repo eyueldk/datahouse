@@ -1,10 +1,10 @@
-import { defineConfig } from "bunup";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: "src/index.ts",
+  entry: ["src/index.ts"],
   outDir: "dist",
   format: "esm",
-  target: "bun",
+  target: "node18",
   dts: true,
   sourcemap: true,
 });

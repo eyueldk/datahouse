@@ -7,6 +7,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import { buttonVariants } from "#/components/ui/button";
+import { SidebarVersions } from "#/components/sidebar-versions";
 import { cn } from "#/lib/utils";
 
 export function Sidebar() {
@@ -93,6 +94,7 @@ export function Sidebar() {
           </Link>
         </nav>
       </div>
+      <SidebarVersions />
     </aside>
   );
 }

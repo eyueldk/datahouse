@@ -1,5 +1,5 @@
 import { unwrapData } from "../utils";
-import type { TreatyClient } from "../utils/treaty.ts";
+import type { EdenFetchClient } from "../utils/eden.ts";
 import type { AnyCollection } from "@datahousejs/core";
 import type {
   CollectionDataByIdFromCollection,
@@ -9,138 +9,106 @@ import type {
   PaginatedResponse,
 } from "../types";
 
-export interface DatawarehouseClient<TCollection extends AnyCollection> {
-  /** Distinct collection ids from live datawarehouse rows and tombstones. */
-  collections(): Promise<{ items: string[] }>;
+export class DatawarehouseCollectionsClient {
+  constructor(private client: EdenFetchClient) {}
 
-  tombstones<
-    const TCollectionId extends CollectionIdFromCollection<TCollection>,
-  >(params: {
-    collection: TCollectionId;
-    since?: Date | null;
-    limit?: number;
-    offset?: number;
-  }): AsyncGenerator<
-    PaginatedResponse<DatawarehouseTombstone>,
-    void,
-    undefined
-  >;
-
-  records<
-    const TCollectionId extends CollectionIdFromCollection<TCollection>,
-  >(params: {
-    collection: TCollectionId;
-    since?: Date | null;
-    limit?: number;
-    offset?: number;
-  }): AsyncGenerator<
-    PaginatedResponse<
-      DatawarehouseRecord<
-        CollectionDataByIdFromCollection<TCollection, TCollectionId>,
-        TCollectionId
-      >
-    >,
-    void,
-    undefined
-  >;
+  async list() {
+    const response = await this.client("/api/datawarehouse-collections", { method: "GET" });
+    return unwrapData(response, "Failed to list datawarehouse collections");
+  }
 }
 
-export function createDatawarehouseClient<
-  const TCollection extends AnyCollection,
->(client: TreatyClient): DatawarehouseClient<TCollection> {
-  async function collections(): Promise<{ items: string[] }> {
-    const response = await client.api.datawarehouse.collections.get();
-    return unwrapData(response, "Failed to list datawarehouse collections") as {
-      items: string[];
-    };
-  }
+export class DatawarehouseTombstonesClient<TCollection extends AnyCollection> {
+  constructor(private client: EdenFetchClient) {}
 
-  function tombstones<
+  async *pages<
     const TCollectionId extends CollectionIdFromCollection<TCollection>,
   >(params: {
     collection: TCollectionId;
     since?: Date | null;
     limit?: number;
     offset?: number;
-  }): AsyncGenerator<
-    PaginatedResponse<DatawarehouseTombstone>,
-    void,
-    undefined
-  > {
-    return (async function* () {
-      const limit = params.limit ?? 50;
-      let offset = params.offset ?? 0;
-      while (true) {
-        const response = await client.api.datawarehouse.tombstones.post({
+  }) {
+    const limit = params.limit ?? 50;
+    let offset = params.offset ?? 0;
+    while (true) {
+      const response = await this.client("/api/datawarehouse-tombstones", {
+        method: "POST",
+        body: {
           collection: params.collection,
           since: params.since ?? undefined,
           limit,
           offset,
-        });
-        const page = unwrapData(
-          response,
-          "Failed to list datawarehouse tombstones",
-        ) as PaginatedResponse<DatawarehouseTombstone>;
-        if (page.items.length === 0) {
-          break;
-        }
-        yield page;
-        offset += page.items.length;
-        if (offset >= page.meta.total) {
-          break;
-        }
+        },
+      });
+      const page = unwrapData(
+        response,
+        "Failed to list datawarehouse tombstones",
+      );
+      if (page.items.length === 0) {
+        break;
       }
-    })();
+      yield page;
+      offset += page.items.length;
+      if (offset >= page.meta.total) {
+        break;
+      }
+    }
   }
+}
 
-  function records<
+export class DatawarehouseRecordsClient<TCollection extends AnyCollection> {
+  constructor(private client: EdenFetchClient) {}
+
+  async *pages<
     const TCollectionId extends CollectionIdFromCollection<TCollection>,
   >(params: {
     collection: TCollectionId;
     since?: Date | null;
     limit?: number;
     offset?: number;
-  }): AsyncGenerator<
-    PaginatedResponse<
-      DatawarehouseRecord<
-        CollectionDataByIdFromCollection<TCollection, TCollectionId>,
-        TCollectionId
-      >
-    >,
-    void,
-    undefined
-  > {
-    return (async function* () {
-      const limit = params.limit ?? 50;
-      let offset = params.offset ?? 0;
-      while (true) {
-        const response = await client.api.datawarehouse.records.post({
+  }) {
+    const limit = params.limit ?? 50;
+    let offset = params.offset ?? 0;
+    while (true) {
+      const response = await this.client("/api/datawarehouse-records", {
+        method: "POST",
+        body: {
           collection: params.collection,
           since: params.since ?? undefined,
           limit,
           offset,
-        });
-        const page = unwrapData(
-          response,
-          "Failed to list datawarehouse records",
-        ) as PaginatedResponse<
-          DatawarehouseRecord<
-            CollectionDataByIdFromCollection<TCollection, TCollectionId>,
-            TCollectionId
-          >
-        >;
-        if (page.items.length === 0) {
-          break;
-        }
-        yield page;
-        offset += page.items.length;
-        if (offset >= page.meta.total) {
-          break;
-        }
+        },
+      });
+      const page = unwrapData(
+        response,
+        "Failed to list datawarehouse records",
+      ) as PaginatedResponse<
+        DatawarehouseRecord<
+          CollectionDataByIdFromCollection<TCollection, TCollectionId>,
+          TCollectionId
+        >
+      >;
+      if (page.items.length === 0) {
+        break;
       }
-    })();
+      yield page;
+      offset += page.items.length;
+      if (offset >= page.meta.total) {
+        break;
+      }
+    }
   }
 
-  const api = { collections, tombstones, records };
-  return api;
+  async delete(params: { id: string }) {
+    const response = await this.client("/api/datawarehouse-records/:id", {
+      method: "DELETE",
+      params: { id: params.id },
+    });
+    if (response.error) {
+      throw new Error(
+        `Failed to delete datawarehouse record ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
+      );
+    }
+  }
 }

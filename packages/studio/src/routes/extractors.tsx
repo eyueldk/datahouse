@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "#/components/ui/card";
 import { DataTable } from "#/components/ui/data-table";
-import { client } from "#/lib/client";
+import { listExtractors } from "#/lib/server-functions";
 
 const columns: ColumnDef<ExtractorInfo>[] = [
   {
@@ -25,7 +25,7 @@ const columns: ColumnDef<ExtractorInfo>[] = [
 
 export const Route = createFileRoute("/extractors")({
   loader: async () => {
-    const payload = await client.extractors.list({});
+    const payload = await listExtractors();
     return { extractors: payload.items };
   },
   component: ExtractorsPage,

@@ -8,6 +8,13 @@
       "when": 1776754520259,
       "tag": "0000_shallow_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776872538856,
+      "tag": "0001_wakeful_tarantula",
+      "breakpoints": true
     }
   ]
 }

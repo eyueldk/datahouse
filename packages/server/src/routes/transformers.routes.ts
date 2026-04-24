@@ -13,7 +13,7 @@ const ListTransformersQueryRequest = t.Object({
   extractorId: t.Optional(t.String()),
 });
 
-export const transformerRoutes = new Elysia().get(
+export const transformerRoutes = new Elysia({ tags: ["Transformers"] }).get(
   "/transformers",
   ({ query, status }) => {
     let pipelines = datahouse.pipelines;

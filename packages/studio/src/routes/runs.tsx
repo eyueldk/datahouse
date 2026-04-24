@@ -4,7 +4,7 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Button } from "#/components/ui/button";
@@ -184,13 +184,17 @@ function RunsPage() {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="text-right">
+        <div className="flex justify-end">
           <Button
-            size="sm"
-            variant="secondary"
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+            aria-label="Inspect run"
+            title="Inspect run"
             onClick={() => openRun(row.original)}
           >
-            Browse
+            <Search className="size-4" aria-hidden />
           </Button>
         </div>
       ),
@@ -227,7 +231,7 @@ function RunsPage() {
               </Button>
             ))}
           </div>
-          <DataTable columns={columns} data={runs} />
+          <DataTable columns={columns} data={runs} clientPagination={false} />
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               {total === 0

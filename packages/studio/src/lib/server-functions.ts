@@ -1,129 +1,103 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { createClient } from "@datahousejs/client";
 import type { AnyDatahouse } from "@datahousejs/core";
 
 const DATAHOUSE_URL = process.env.DATAHOUSE_URL ?? "http://localhost:2510";
 
-const client = createClient<AnyDatahouse>({ domain: DATAHOUSE_URL });
+const client = createClient<AnyDatahouse>({ baseUrl: DATAHOUSE_URL });
 
-export const listSources = createServerFn().handler(async () => {
-  return client.sources.list({});
+export const getApiVersion = createServerFn().handler(async () => {
+  return await client.version.get();
 });
 
-export const createSource = createServerFn({ method: "POST" })
-  .inputValidator(
-    z.object({
-      extractorId: z.string().min(1),
-      config: z.unknown().optional(),
-    }),
-  )
+export const listSources = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.sources.list>[0]) => data)
   .handler(async ({ data }) => {
-    return client.sources.create({
-      extractorId: data.extractorId,
-      config: data.config,
-    });
+    return await client.sources.list(data);
+  });
+
+export const createSource = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.sources.create>[0]) => data)
+  .handler(async ({ data }) => {
+    return await client.sources.create(data);
   });
 
 export const deleteSource = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string().min(1) }))
+  .inputValidator((data: Parameters<typeof client.sources.delete>[0]) => data)
   .handler(async ({ data }) => {
-    return client.sources.remove({ id: data.id });
+    return await client.sources.delete(data);
   });
 
 export const extractSource = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string().min(1) }))
+  .inputValidator((data: Parameters<typeof client.sources.extract>[0]) => data)
   .handler(async ({ data }) => {
-    return client.sources.extract({ id: data.id });
+    return await client.sources.extract(data);
   });
 
-export const listExtractors = createServerFn().handler(async () => {
-  return client.extractors.list({});
-});
-
-export const listRuns = createServerFn()
-  .inputValidator(
-    z.object({
-      type: z.enum(["extract", "transform"]).optional(),
-      limit: z.number().int().positive().optional(),
-      offset: z.number().int().nonnegative().optional(),
-    }).optional(),
-  )
+export const listExtractors = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.extractors.list>[0]) => data)
   .handler(async ({ data }) => {
-    return client.runs.list({
-      type: data?.type,
-      limit: data?.limit,
-      offset: data?.offset,
-    });
+    return await client.extractors.list(data);
   });
 
-export const getRun = createServerFn()
-  .inputValidator(z.object({ id: z.string().min(1) }))
+export const listRuns = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.runs.list>[0]) => data)
   .handler(async ({ data }) => {
-    return client.runs.get({ id: data.id });
+    return await client.runs.list(data);
   });
 
-export const listDatalake = createServerFn()
-  .inputValidator(
-    z.object({
-      extractorId: z.string().optional(),
-    }).optional(),
-  )
+export const getRun = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.runs.get>[0]) => data)
   .handler(async ({ data }) => {
-    const items = [];
-    for await (const page of client.datalake.pages({
-      extractorId: data?.extractorId,
-      limit: 200,
-    })) {
-      items.push(...page.items);
-    }
-    return { items };
+    return await client.runs.get(data);
+  });
+
+export const listDatalake = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.datalakeRecords.list>[0]) => data)
+  .handler(async ({ data }) => {
+    return await client.datalakeRecords.list(data);
   });
 
 export const transformDatalake = createServerFn({ method: "POST" })
-  .inputValidator(
-    z.object({
-      id: z.string().min(1),
-      transformerIds: z.array(z.string()).optional(),
-    }),
-  )
+  .inputValidator((data: Parameters<typeof client.datalakeRecords.transform>[0]) => data)
   .handler(async ({ data }) => {
-    return client.datalake.transform({
-      id: data.id,
-      transformerIds: data.transformerIds,
-    });
+    return await client.datalakeRecords.transform(data);
   });
 
-export const listTransformers = createServerFn()
-  .inputValidator(
-    z.object({
-      extractorId: z.string().optional(),
-    }).optional(),
-  )
+export const deleteDatalakeRecord = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.datalakeRecords.delete>[0]) => data)
   .handler(async ({ data }) => {
-    return client.transformers.list({ extractorId: data?.extractorId });
+    return await client.datalakeRecords.delete(data);
+  });
+
+export const listTransformers = createServerFn({ method: "POST" })
+  .inputValidator((data: Parameters<typeof client.transformers.list>[0]) => data)
+  .handler(async ({ data }) => {
+    return await client.transformers.list(data);
   });
 
 export const listDatawarehouseCollections = createServerFn().handler(
   async () => {
-    return client.datawarehouse.collections();
+    return await client.datawarehouseCollections.list();
   },
 );
 
 export const listDatawarehouseRecords = createServerFn({ method: "POST" })
   .inputValidator(
-    z.object({
-      collection: z.string().min(1),
-      limit: z.number().int().positive().optional(),
-    }),
+    (data: Parameters<typeof client.datawarehouseRecords.pages>[0]) => data,
   )
   .handler(async ({ data }) => {
     const items = [];
-    for await (const page of client.datawarehouse.records({
-      collection: data.collection,
-      limit: data.limit ?? 200,
-    })) {
+    for await (const page of client.datawarehouseRecords.pages(data)) {
       items.push(...page.items);
     }
     return { items };
+  });
+
+export const deleteDatawarehouseRecord = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: Parameters<typeof client.datawarehouseRecords.delete>[0]) => data,
+  )
+  .handler(async ({ data }) => {
+    return await client.datawarehouseRecords.delete(data);
   });

@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import {
+  deleteDatawarehouseRecordById,
   listDatawarehouseCollectionIds,
   paginateDatawarehouseRecords,
   paginateDatawarehouseTombstones,
@@ -36,6 +37,7 @@ const RecordResponse = t.Object({
   collection: t.String(),
   key: t.String(),
   data: t.Any(),
+  metadata: t.Any(),
   createdAt: t.Date(),
   updatedAt: t.Date(),
 });
@@ -56,9 +58,13 @@ const ListCollectionsResponse = t.Object({
   items: t.Array(t.String()),
 });
 
-export const datawarehouseRoutes = new Elysia()
+const RecordIdParamsRequest = t.Object({
+  id: t.String(),
+});
+
+export const datawarehouseRoutes = new Elysia({ tags: ["Datawarehouse"] })
   .get(
-    "/datawarehouse/collections",
+    "/datawarehouse-collections",
     async ({ status }) => {
       const items = await listDatawarehouseCollectionIds();
       return status(200, { items });
@@ -68,7 +74,7 @@ export const datawarehouseRoutes = new Elysia()
     },
   )
   .post(
-    "/datawarehouse/tombstones",
+    "/datawarehouse-tombstones",
     async ({ body, status }) => {
       const limit = body.limit !== undefined ? Number(body.limit) : 50;
       const offset = body.offset !== undefined ? Number(body.offset) : 0;
@@ -93,7 +99,7 @@ export const datawarehouseRoutes = new Elysia()
     },
   )
   .post(
-    "/datawarehouse/records",
+    "/datawarehouse-records",
     async ({ body, status }) => {
       const limit = body.limit !== undefined ? Number(body.limit) : 50;
       const offset = body.offset !== undefined ? Number(body.offset) : 0;
@@ -115,5 +121,18 @@ export const datawarehouseRoutes = new Elysia()
     {
       body: ListRecordsPostRequest,
       response: { 200: ListRecordsPostResponse },
+    },
+  )
+  .delete(
+    "/datawarehouse-records/:id",
+    async ({ params: { id }, status }) => {
+      await deleteDatawarehouseRecordById({ id });
+      return status(204, "");
+    },
+    {
+      params: RecordIdParamsRequest,
+      response: {
+        204: t.String(),
+      },
     },
   );

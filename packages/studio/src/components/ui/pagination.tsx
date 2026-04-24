@@ -26,9 +26,9 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
 }: PaginationProps) {
-  const totalPages = Math.ceil(total / pageSize);
-  const start = (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, total);
+  const totalPages = total === 0 ? 1 : Math.max(1, Math.ceil(total / pageSize));
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = total === 0 ? 0 : Math.min(page * pageSize, total);
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4">
@@ -62,7 +62,7 @@ export function Pagination({
           <button
             className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent hover:text-accent-foreground transition-colors"
             onClick={() => onPageChange(page - 1)}
-            disabled={page <= 1}
+            disabled={total === 0 || page <= 1}
           >
             <ChevronLeftIcon className="size-4" />
           </button>
@@ -72,7 +72,7 @@ export function Pagination({
           <button
             className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent hover:text-accent-foreground transition-colors"
             onClick={() => onPageChange(page + 1)}
-            disabled={page >= totalPages}
+            disabled={total === 0 || page >= totalPages}
           >
             <ChevronRightIcon className="size-4" />
           </button>

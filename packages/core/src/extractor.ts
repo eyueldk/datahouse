@@ -2,7 +2,11 @@ import type { z } from "zod";
 import type { UploadedFile } from "./file";
 
 export type ExtractBatch<TData, TCursor = unknown> = {
-  items: Array<{ key: string; data: TData }>;
+  items: Array<{
+    key: string;
+    data: TData;
+    metadata?: Record<string, any>;
+  }>;
   cursor?: TCursor;
 };
 

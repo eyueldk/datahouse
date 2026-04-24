@@ -55,10 +55,7 @@ export async function findSource(
     .from(sources)
     .where(whereClause)
     .limit(1);
-  if (!source) {
-    throw new Error(`Source not found for ${JSON.stringify(params)}`);
-  }
-  return source;
+  return source ?? null;
 }
 
 export async function updateSource({

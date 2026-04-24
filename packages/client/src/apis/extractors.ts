@@ -1,6 +1,5 @@
 import { paginate, unwrapData } from "../utils";
-import type { TreatyClient } from "../utils/treaty.ts";
-import type { PaginatedResponse } from "../types";
+import type { EdenFetchClient } from "../utils/eden.ts";
 
 export interface ExtractorInfo {
   id: string;
@@ -8,33 +7,34 @@ export interface ExtractorInfo {
   schema: object;
 }
 
-export interface ExtractorsClient {
-  list(params?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<PaginatedResponse<ExtractorInfo>>;
-  pages(params?: {
-    limit?: number;
-    offset?: number;
-  }): AsyncGenerator<PaginatedResponse<ExtractorInfo>, void, undefined>;
-}
+export class ExtractorsClient {
+  constructor(private client: EdenFetchClient) {}
 
-export function createExtractorsClient(client: TreatyClient): ExtractorsClient {
-  return {
-    async list(params = {}) {
-      const response = await client.api.extractors.get({
-        query: {
-          limit: params.limit,
-          offset: params.offset,
-        },
-      });
-      return unwrapData(response, "Failed to list extractors");
-    },
-    pages(params = {}) {
-      return paginate(
-        ({ limit, offset }) => this.list({ limit, offset }),
-        params,
-      );
-    },
-  };
+  async list(
+    params: {
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) {
+    const response = await this.client("/api/extractors", {
+      method: "GET",
+      query: {
+        limit: params.limit,
+        offset: params.offset,
+      },
+    });
+    return unwrapData(response, "Failed to list extractors");
+  }
+
+  pages(
+    params: {
+      limit?: number;
+      offset?: number;
+    } = {},
+  ) {
+    return paginate(
+      ({ limit, offset }) => this.list({ limit, offset }),
+      params,
+    );
+  }
 }

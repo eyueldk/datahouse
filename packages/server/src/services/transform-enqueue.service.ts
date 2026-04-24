@@ -21,11 +21,16 @@ export interface EnqueueTransformationsResult {
 /**
  * Enqueues transformation jobs for a datalake record. Each job clears existing datawarehouse
  * rows for that (datalake, transformer) pair before writing new output (see transform queue).
+ * When the record is missing or nothing is enqueued, `runIds` is empty and `enqueued` is 0.
  */
 export async function enqueueTransformations(
   params: EnqueueTransformationsParams,
 ): Promise<EnqueueTransformationsResult> {
   const record = await findDatalakeRecord({ id: params.datalakeRecordId });
+  if (!record) {
+    return { runIds: [], enqueued: 0 };
+  }
+
   const pipelines = datahouse.pipelines.filter(
     (p) => p.extractor.id === record.extractorId,
   );

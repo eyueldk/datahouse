@@ -1,9 +1,8 @@
+import type { UseNavigateResult } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export function toastQueuedRun(
-  router: {
-    navigate: (opts: { to: string; search?: unknown }) => Promise<void>;
-  },
+  navigate: UseNavigateResult<string>,
   jobId: string,
   runType: "extract" | "transform",
   title = "Run queued",
@@ -13,7 +12,7 @@ export function toastQueuedRun(
     action: {
       label: "Open",
       onClick: () => {
-        void router.navigate({
+        void navigate({
           to: "/runs",
           search: { page: 0, type: runType, id: jobId },
         });
@@ -23,13 +22,15 @@ export function toastQueuedRun(
 }
 
 export function toastQueuedTransformBatch(
-  router: {
-    navigate: (opts: { to: string; search?: unknown }) => Promise<void>;
-  },
+  navigate: UseNavigateResult<string>,
   runIds: string[],
   enqueued: number,
 ) {
   const first = runIds[0];
+  if (enqueued === 0) {
+    toast.message("0 transform runs queued");
+    return;
+  }
   if (!first) return;
   const title =
     enqueued === 1
@@ -40,7 +41,7 @@ export function toastQueuedTransformBatch(
     action: {
       label: "Open",
       onClick: () => {
-        void router.navigate({
+        void navigate({
           to: "/runs",
           search: { page: 0, type: "transform", id: first },
         });

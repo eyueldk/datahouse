@@ -31,6 +31,16 @@ export const extractQueue = queueBackend.register<
     let extracted = 0;
     const { sourceId } = data;
     const source = await findSource({ id: sourceId });
+    if (!source) {
+      console.error(`[extract] Source not found: ${sourceId}`);
+      if (data.runId) {
+        await failRun({
+          runId: data.runId,
+          error: `Source not found: ${sourceId}`,
+        });
+      }
+      return { extracted };
+    }
 
     const pipelines = datahouse.pipelines.filter(
       (p) => p.extractor.id === source.extractorId,
@@ -64,7 +74,11 @@ export const extractQueue = queueBackend.register<
     if (data.runId) {
       const existing = await findRun({ id: data.runId });
       if (!existing) {
-        throw new Error(`Run ${data.runId} not found`);
+        await failRun({
+          runId: data.runId,
+          error: `Run ${data.runId} not found`,
+        });
+        return { extracted };
       }
       run = existing;
     } else {
