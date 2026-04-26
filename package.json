@@ -19,7 +19,7 @@
     "format": "prettier --write .",
     "check": "turbo run check",
     "version": "changeset add && changeset version",
-    "release": "bun run build && bun run ./scripts/publish.ts",
+    "release": "bun run build && bun run check && bun run ./scripts/publish.ts",
     "release:dry": "bun run release --dry-run"
   }
 }

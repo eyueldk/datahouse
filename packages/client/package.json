@@ -1,7 +1,6 @@
 {
   "name": "@datahousejs/client",
-  "version": "0.2.7",
-  "main": "dist/index.mjs",
+  "version": "0.2.10",
   "types": "dist/index.d.mts",
   "type": "module",
   "private": false,
@@ -11,11 +10,8 @@
     "dist"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "default": "./dist/index.mjs"
-    }
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"

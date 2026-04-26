@@ -98,8 +98,8 @@ export const transformQueue = queueBackend.register<
             createdAt: uploaded.createdAt,
           });
         },
-        download: async (params) => {
-          const { content } = await downloadFile({ id: params.id });
+        download: async (params: { file: UploadedFile }) => {
+          const { content } = await downloadFile({ id: params.file.id });
           return content;
         },
       })) {

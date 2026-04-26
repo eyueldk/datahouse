@@ -109,8 +109,8 @@ export const extractQueue = queueBackend.register<
             createdAt: record.createdAt,
           });
         },
-        download: async (params: { id: string }) => {
-          const { content } = await downloadFile({ id: params.id });
+        download: async (params: { file: UploadedFile }) => {
+          const { content } = await downloadFile({ id: params.file.id });
           return content;
         },
       })) {

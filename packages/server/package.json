@@ -1,6 +1,6 @@
 {
   "name": "@datahousejs/server",
-  "version": "0.2.7",
+  "version": "0.2.10",
   "type": "module",
   "description": "Datahouse server",
   "repository": "https://github.com/eyueldk/datahouse",

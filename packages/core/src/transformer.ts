@@ -37,7 +37,7 @@ export interface TransformContext<TInput> {
     name?: string;
     mimeType?: string;
   }) => Promise<UploadedFile>;
-  download: (params: { id: string }) => Promise<Buffer>;
+  download: (params: { file: UploadedFile }) => Promise<Buffer>;
 }
 
 export type TransformGeneratorFunction<

@@ -18,7 +18,7 @@ export interface ExtractContext<TConfig = unknown, TCursor = unknown> {
     name?: string;
     mimeType?: string;
   }) => Promise<UploadedFile>;
-  download: (params: { id: string }) => Promise<Buffer>;
+  download: (params: { file: UploadedFile }) => Promise<Buffer>;
 }
 
 export type ExtractGeneratorFunction<TData, TConfig = {}, TCursor = {}> = (

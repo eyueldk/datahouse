@@ -6,5 +6,6 @@ export default defineConfig({
   format: "esm",
   target: "node18",
   dts: true,
+  exports: true,
   sourcemap: true,
 });

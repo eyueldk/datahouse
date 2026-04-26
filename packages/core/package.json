@@ -1,6 +1,6 @@
 {
   "name": "@datahousejs/core",
-  "version": "0.2.7",
+  "version": "0.2.10",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
