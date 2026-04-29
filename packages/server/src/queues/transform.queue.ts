@@ -12,7 +12,7 @@ import {
   failRun,
   findRun,
 } from "../services/run.service";
-import { uploadFile, downloadFile } from "../services/files.service";
+import { downloadFile, uploadFile } from "../services/files.service";
 
 export interface TransformQueueData {
   transformerId: string;
@@ -99,8 +99,11 @@ export const transformQueue = queueBackend.register<
           });
         },
         download: async (params: { file: UploadedFile }) => {
-          const { content } = await downloadFile({ id: params.file.id });
-          return content;
+          const result = await downloadFile({ id: params.file.id });
+          if (!result) {
+            throw new Error(`File not found: ${params.file.id}`);
+          }
+          return result;
         },
       })) {
         const { collection, items } = batch;

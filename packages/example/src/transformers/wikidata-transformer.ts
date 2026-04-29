@@ -1,4 +1,4 @@
-import { createTransformer } from "datahouse/core";
+import { createTransformer, UploadedFile } from "datahouse/core";
 import { booksCollection } from "../collections/books";
 import { wikidataExtractor } from "../extractors/wikidata";
 import type { WikidataBookBinding } from "../extractors/wikidata";
@@ -32,11 +32,15 @@ function toPublishYear(isoDate: string | undefined): number | null {
   return Number.isFinite(year) ? year : null;
 }
 
+function safeFileSegment(id: string): string {
+  return id.replace(/[/\\?*:|"<>]/g, "_").slice(0, 120);
+}
+
 export const wikidataTransformer = createTransformer({
   id: "wikidata-transformer",
   extractor: wikidataExtractor,
   collections: [booksCollection],
-  async *transform({ data, metadata }) {
+  async *transform({ data, metadata, upload, download }) {
     const entityId = extractEntityId(data.book?.value);
     const unifiedBook: UnifiedBook = {
       id: `wikidata:${entityId}`,
@@ -48,17 +52,50 @@ export const wikidataTransformer = createTransformer({
       source: "Wikidata",
     };
 
+    let artifactLimit: number | null = null;
+    const inputArtifact = data.artifact;
+    if (inputArtifact instanceof UploadedFile) {
+      const artifactBytes = await download({ file: inputArtifact });
+      const parsed = JSON.parse(artifactBytes.toString("utf8")) as {
+        sparqlLimit?: number;
+      };
+      artifactLimit =
+        typeof parsed.sparqlLimit === "number" ? parsed.sparqlLimit : null;
+    }
+
+    const artifact = await upload({
+      content: Buffer.from(
+        JSON.stringify(
+          {
+            transformer: "wikidata-transformer",
+            unifiedBookId: unifiedBook.id,
+            artifactSparqlLimit: artifactLimit,
+            transformedAt: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      ),
+      name: `wikidata-transform-${safeFileSegment(unifiedBook.id)}.json`,
+      mimeType: "application/json",
+    });
+
     yield {
       collection: "books",
       items: [
         {
           key: unifiedBook.id,
-          data: unifiedBook,
+          data: {
+            ...unifiedBook,
+            artifact,
+          },
           metadata: {
             transformerId: "wikidata-transformer",
             datalakeUpstream: metadata.upstream,
             datalakeFetchedAt: metadata.fetchedAt,
             wikidataBookUri: data.book?.value ?? null,
+            artifactSparqlLimit: artifactLimit,
           },
         },
       ],

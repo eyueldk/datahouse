@@ -1,9 +1,13 @@
 import { Search, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+} from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useForm } from "@tanstack/react-form";
 import { type ColumnDef } from "@tanstack/react-table";
+import { z } from "zod";
 import {
   Card,
   CardContent,
@@ -30,62 +34,119 @@ import {
 import type { DatawarehouseRecord } from "@datahousejs/client";
 import { Button } from "#/components/ui/button";
 import {
-  deleteDatawarehouseRecord,
-  listDatawarehouseCollections,
-  listDatawarehouseRecords,
-} from "#/lib/server-functions";
+  TableCellTruncate,
+  TableLinkTruncate,
+} from "#/components/table-cell-truncate";
+import {
+  useDatawarehouseCollectionsQuery,
+  useDatawarehouseRecordsQuery,
+  useDeleteDatawarehouseRecordMutation,
+} from "#/hooks/datawarehouse.hooks";
 
 type DatawarehouseBrowseRecord = DatawarehouseRecord<unknown, string>;
 
 export const Route = createFileRoute("/datawarehouse")({
-  loader: async () => {
-    const { items: collections } = await listDatawarehouseCollections();
-    const records: DatawarehouseBrowseRecord[] = [];
-    for (const collection of collections) {
-      const { items } = await listDatawarehouseRecords({
-        data: {
-          collection,
-          limit: 200,
-        },
-      });
-      records.push(...items);
-    }
-    return { records };
-  },
+  validateSearch: z.object({
+    inspect: z.string().optional(),
+  }),
   component: DatawarehousePage,
 });
 
 function DatawarehousePage() {
-  const router = useRouter();
-  const { records } = Route.useLoaderData();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const inspectFromUrl = Route.useSearch({ select: (s) => s.inspect });
+  const collectionsQuery = useDatawarehouseCollectionsQuery(undefined);
+  const collections = collectionsQuery.data?.items ?? [];
+  const [selectedCollection, setSelectedCollection] = useState("");
+  const recordsQuery = useDatawarehouseRecordsQuery(
+    { collection: selectedCollection, limit: 200, offset: 0 },
+    { enabled: selectedCollection.length > 0 },
+  );
+  const records = (recordsQuery.data?.items ?? []) as DatawarehouseBrowseRecord[];
   const [selectedRecord, setSelectedRecord] =
     useState<DatawarehouseBrowseRecord | null>(null);
+  const deleteDatawarehouseRecordMutation =
+    useDeleteDatawarehouseRecordMutation();
 
-  const browseForm = useForm({
-    defaultValues: {
-      collection: "all",
-    },
-  });
+  useEffect(() => {
+    if (selectedCollection || collections.length === 0) return;
+    setSelectedCollection(collections[0]);
+  }, [collections, selectedCollection]);
 
-  const collections = Array.from(
-    new Set(records.map((record) => record.collection)),
-  ).sort((a, b) => a.localeCompare(b));
+  useEffect(() => {
+    if (!inspectFromUrl) return;
+    const hit = records.find((r) => r.id === inspectFromUrl);
+    if (hit) setSelectedRecord(hit);
+  }, [inspectFromUrl, records]);
 
   const columns: ColumnDef<DatawarehouseBrowseRecord>[] = [
-    { accessorKey: "id", header: "ID" },
-    { accessorKey: "key", header: "Key" },
-    { accessorKey: "collection", header: "Collection" },
-    { accessorKey: "transformerId", header: "Transformer" },
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => (
+        <TableCellTruncate text={row.original.id} variant="id" />
+      ),
+    },
+    {
+      accessorKey: "key",
+      header: "Key",
+      cell: ({ row }) => (
+        <TableCellTruncate text={row.original.key} variant="key" />
+      ),
+    },
+    {
+      accessorKey: "collection",
+      header: "Collection",
+      cell: ({ row }) => (
+        <TableCellTruncate text={row.original.collection} variant="key" />
+      ),
+    },
+    {
+      accessorKey: "transformerId",
+      header: "Transformer",
+      cell: ({ row }) => (
+        <TableLinkTruncate
+          to="/extractors"
+          label={row.original.transformerId}
+          variant="key"
+        />
+      ),
+    },
+    {
+      accessorKey: "datalakeId",
+      header: "Datalake",
+      cell: ({ row }) => (
+        <TableLinkTruncate
+          to="/datalake"
+          search={{ inspect: row.original.datalakeId }}
+          label={row.original.datalakeId}
+          variant="id"
+        />
+      ),
+    },
+    {
+      accessorKey: "runId",
+      header: "Run",
+      cell: ({ row }) => (
+        <TableLinkTruncate
+          to="/runs"
+          search={{ page: 0, id: row.original.runId }}
+          label={row.original.runId}
+          variant="id"
+        />
+      ),
+    },
     {
       accessorKey: "createdAt",
       header: "Created At",
-      cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
+      cell: ({ row }) =>
+        new Date(row.getValue("createdAt")).toLocaleString(),
     },
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
+        <div className="flex shrink-0 justify-end gap-1">
           <Button
             type="button"
             size="icon"
@@ -93,7 +154,13 @@ function DatawarehousePage() {
             className="shrink-0"
             aria-label="Inspect record"
             title="Inspect record"
-            onClick={() => setSelectedRecord(row.original)}
+            onClick={() => {
+              setSelectedRecord(row.original);
+              void navigate({
+                to: "/datawarehouse",
+                search: { inspect: row.original.id },
+              });
+            }}
           >
             <Search className="size-4" aria-hidden />
           </Button>
@@ -107,14 +174,13 @@ function DatawarehousePage() {
             onClick={() => {
               void (async () => {
                 try {
-                  await deleteDatawarehouseRecord({
-                    data: { id: row.original.id },
+                  await deleteDatawarehouseRecordMutation.mutateAsync({
+                    id: row.original.id,
                   });
                   toast.success("Data warehouse record deleted");
                   setSelectedRecord((prev) =>
                     prev?.id === row.original.id ? null : prev,
                   );
-                  await router.invalidate();
                 } catch (e) {
                   toast.error(e instanceof Error ? e.message : String(e));
                 }
@@ -137,54 +203,64 @@ function DatawarehousePage() {
             Curated collection records produced by transformers.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <div className="mb-4 grid gap-2">
-            <browseForm.Field name="collection">
-              {(field) => (
-                <>
-                  <Label htmlFor={field.name}>Collection</Label>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(value) =>
-                      field.handleChange(value ?? "all")
-                    }
-                  >
-                    <SelectTrigger id={field.name} className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="start">
-                      <SelectItem value="all">All collections</SelectItem>
-                      {collections.map((collection) => (
-                        <SelectItem key={collection} value={collection}>
-                          {collection}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </>
-              )}
-            </browseForm.Field>
+            <Label htmlFor="collection">Collection</Label>
+            <Select
+              value={selectedCollection}
+              onValueChange={(value) => setSelectedCollection(value ?? "")}
+            >
+              <SelectTrigger id="collection" className="w-full">
+                <SelectValue placeholder="Select a collection" />
+              </SelectTrigger>
+              <SelectContent align="start">
+                {collections.map((collection) => (
+                  <SelectItem key={collection} value={collection}>
+                    {collection}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <browseForm.Subscribe selector={(state) => state.values.collection}>
-            {(collection) => (
-              <DataTable
-                columns={columns}
-                data={
-                  collection === "all"
-                    ? records
-                    : records.filter(
-                        (record) => record.collection === collection,
-                      )
-                }
-              />
-            )}
-          </browseForm.Subscribe>
+          {collectionsQuery.error ? (
+            <p className="mb-4 text-sm text-destructive">
+              {collectionsQuery.error.message}
+            </p>
+          ) : recordsQuery.error ? (
+            <p className="mb-4 text-sm text-destructive">
+              {recordsQuery.error.message}
+            </p>
+          ) : null}
+          {selectedCollection || collectionsQuery.isLoading ? (
+            <DataTable
+              columns={columns}
+              data={records}
+              loading={collectionsQuery.isLoading || recordsQuery.isLoading}
+              loadingLabel={
+                collectionsQuery.isLoading
+                  ? "Loading data warehouse collections..."
+                  : "Loading data warehouse records..."
+              }
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No data warehouse collections found.
+            </p>
+          )}
         </CardContent>
       </Card>
 
       <Sheet
         open={selectedRecord !== null}
-        onOpenChange={(open) => !open && setSelectedRecord(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRecord(null);
+            void navigate({
+              to: "/datawarehouse",
+              search: { inspect: undefined },
+            });
+          }
+        }}
       >
         <SheetContent
           side="right"
@@ -197,14 +273,44 @@ function DatawarehousePage() {
             </SheetDescription>
           </SheetHeader>
           {selectedRecord ? (
-            <div className="grid flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
-              <Detail label="ID" value={selectedRecord.id} />
-              <Detail label="Run ID" value={selectedRecord.runId} />
-              <Detail label="Datalake ID" value={selectedRecord.datalakeId} />
-              <Detail
-                label="Transformer ID"
-                value={selectedRecord.transformerId}
-              />
+            <div className="grid min-w-0 flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
+              <DetailMono label="ID">
+                <Link
+                  to="/files"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.id}
+                </Link>
+              </DetailMono>
+              <DetailMono label="Run ID">
+                <Link
+                  to="/runs"
+                  search={{
+                    page: 0,
+                    id: selectedRecord.runId,
+                  }}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.runId}
+                </Link>
+              </DetailMono>
+              <DetailMono label="Datalake ID">
+                <Link
+                  to="/datalake"
+                  search={{ inspect: selectedRecord.datalakeId }}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.datalakeId}
+                </Link>
+              </DetailMono>
+              <DetailMono label="Transformer ID">
+                <Link
+                  to="/extractors"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.transformerId}
+                </Link>
+              </DetailMono>
               <Detail label="Key" value={selectedRecord.key} />
               <Detail label="Collection" value={selectedRecord.collection} />
               <Detail
@@ -239,9 +345,23 @@ function DatawarehousePage() {
   );
 }
 
+function DetailMono(props: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid min-w-0 gap-1">
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {props.label}
+      </p>
+      <div className="min-w-0">{props.children}</div>
+    </div>
+  );
+}
+
 function Detail(props: { label: string; value: string }) {
   return (
-    <div className="grid gap-1">
+    <div className="grid min-w-0 gap-1">
       <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {props.label}
       </p>

@@ -12,7 +12,8 @@ export interface SourceRecord {
   key: string;
   config: object;
   cursor: object;
-  schema: object;
+  /** Config JSON Schema from the runtime extractor. */
+  schema?: object;
   createdAt: Date;
 }
 
@@ -63,7 +64,7 @@ export class SourcesClient {
     return unwrapData(response, `Failed to get source ${params.id}`);
   }
 
-  async create(params: { extractorId: string; config?: unknown }) {
+  async create(params: { extractorId: string; config: unknown }) {
     const response = await this.client("/api/sources", {
       method: "POST",
       body: params,
@@ -92,11 +93,7 @@ export class SourcesClient {
       method: "DELETE",
       params: { id: params.id },
     });
-    if (response.error) {
-      throw new Error(
-        `Failed to delete source ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
-      );
-    }
+    return unwrapData(response, `Failed to delete source ${params.id}`);
   }
 
   async extract(params: { id: string }) {

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createFileRoute,
   useNavigate,
-  useRouter,
 } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -24,117 +24,88 @@ import {
   SheetTitle,
 } from "#/components/ui/sheet";
 import type { RunRecord } from "@datahousejs/client";
-import { listRuns, getRun } from "#/lib/server-functions";
+import { useRunQuery, useRunsQuery } from "#/hooks/runs.hooks";
 import { z } from "zod";
 
 const PAGE_SIZE = 25;
 
-const runTypeSchema = z.enum(["all", "extract", "transform"]);
+const runTypeSchema = z.enum(["extract", "transform"]);
 
 export const Route = createFileRoute("/runs")({
   validateSearch: z.object({
     page: z.coerce.number().int().min(0).catch(0),
     id: z.string().optional(),
-    type: runTypeSchema.catch("all"),
+    type: runTypeSchema.optional(),
   }),
-  loaderDeps: ({ search: { page, type } }) => ({ page, type }),
-  loader: async ({ deps: { page, type } }) => {
-    const limit = PAGE_SIZE;
-    const offset = page * limit;
-    const payload = await listRuns({
-      data: {
-        type: type === "all" ? undefined : type,
-        limit,
-        offset,
-      },
-    });
-    return {
-      runs: payload.items,
-      meta: payload.meta,
-      page,
-      limit,
-      filterType: type,
-    };
-  },
   component: RunsPage,
 });
 
 function RunsPage() {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const navigate = useNavigate({ from: Route.fullPath });
   const searchId = Route.useSearch({ select: (s) => s.id });
   const searchType = Route.useSearch({ select: (s) => s.type });
-  const { runs, meta, page, limit, filterType } = Route.useLoaderData();
+  const page = Route.useSearch({ select: (s) => s.page });
+  const limit = PAGE_SIZE;
+  const filterType = searchType;
+  const runsQuery = useRunsQuery({
+    type: filterType,
+    limit,
+    offset: page * limit,
+  });
+  const runs = runsQuery.data?.items ?? [];
+  const meta = runsQuery.data?.meta ?? { offset: page * limit, limit, total: 0 };
   const [selected, setSelected] = useState<RunRecord | null>(null);
-  const pollFailNotified = useRef(false);
-
   const selectedId = selected?.id ?? null;
   const selectedRunning = selected?.status === "running";
+  const selectedRunQuery = useRunQuery(
+    { id: selectedId ?? "" },
+    {
+      enabled: selectedId !== null && selectedRunning,
+      refetchInterval: selectedRunning ? 2000 : false,
+    },
+  );
+  const searchRunQuery = useRunQuery(
+    { id: searchId ?? "" },
+    { enabled: searchId !== undefined },
+  );
 
   useEffect(() => {
-    if (!selectedId || !selectedRunning) {
-      pollFailNotified.current = false;
-      return;
+    if (!selectedRunQuery.data) return;
+    setSelected(selectedRunQuery.data);
+    if (selectedRunQuery.data.status !== "running") {
+      void queryClient.invalidateQueries();
     }
-
-    let cancelled = false;
-    const id = selectedId;
-
-    async function refresh() {
-      try {
-        const row = await getRun({ data: { id } });
-        if (cancelled) return;
-        pollFailNotified.current = false;
-        setSelected(row);
-        if (row.status !== "running") {
-          void router.invalidate();
-        }
-      } catch (e) {
-        if (cancelled) return;
-        if (!pollFailNotified.current) {
-          pollFailNotified.current = true;
-          toast.error(e instanceof Error ? e.message : String(e));
-        }
-      }
-    }
-
-    void refresh();
-    const interval = window.setInterval(() => {
-      void refresh();
-    }, 2000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [selectedId, selectedRunning, router]);
+  }, [queryClient, selectedRunQuery.data]);
 
   useEffect(() => {
-    if (!searchId) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const row = await getRun({ data: { id: searchId } });
-        if (cancelled) return;
-        setSelected(row);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e));
-      } finally {
-        if (!cancelled) {
-          navigate({
-            search: (p: { page: number; type: typeof searchType }) => ({
-              page: p.page,
-              type: p.type,
-            }),
-            replace: true,
-          });
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [searchId, navigate, searchType]);
+    if (!selectedRunQuery.error) return;
+    toast.error(selectedRunQuery.error.message);
+  }, [selectedRunQuery.error]);
+
+  useEffect(() => {
+    if (!searchRunQuery.data) return;
+    setSelected(searchRunQuery.data);
+    navigate({
+        search: (p: { page: number; type?: typeof searchType }) => ({
+        page: p.page,
+        type: p.type,
+      }),
+      replace: true,
+    });
+  }, [searchRunQuery.data, navigate, searchType]);
+
+  useEffect(() => {
+    if (!searchRunQuery.error) return;
+    toast.error(searchRunQuery.error.message);
+    navigate({
+        search: (p: { page: number; type?: typeof searchType }) => ({
+        page: p.page,
+        type: p.type,
+      }),
+      replace: true,
+    });
+  }, [searchRunQuery.error, navigate, searchType]);
 
   const total = Number(meta.total);
   const offset = page * limit;
@@ -144,7 +115,7 @@ function RunsPage() {
     setSelected(row);
   }
 
-  function setFilterType(next: z.infer<typeof runTypeSchema>) {
+  function setFilterType(next: z.infer<typeof runTypeSchema> | undefined) {
     void navigate({
       search: { page: 0, type: next },
       replace: true,
@@ -215,13 +186,13 @@ function RunsPage() {
           <div className="flex flex-wrap gap-2">
             {(
               [
-                ["all", "All"],
+                [undefined, "All"],
                 ["extract", "Extract"],
                 ["transform", "Transform"],
-              ] as const
+              ] satisfies readonly [z.infer<typeof runTypeSchema> | undefined, string][]
             ).map(([value, label]) => (
               <Button
-                key={value}
+                key={value ?? "all"}
                 type="button"
                 size="sm"
                 variant={filterType === value ? "default" : "outline"}
@@ -231,7 +202,18 @@ function RunsPage() {
               </Button>
             ))}
           </div>
-          <DataTable columns={columns} data={runs} clientPagination={false} />
+          {runsQuery.error ? (
+            <p className="text-sm text-destructive">
+              {runsQuery.error.message}
+            </p>
+          ) : null}
+          <DataTable
+            columns={columns}
+            data={runs}
+            clientPagination={false}
+            loading={runsQuery.isLoading}
+            loadingLabel="Loading runs..."
+          />
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               {total === 0

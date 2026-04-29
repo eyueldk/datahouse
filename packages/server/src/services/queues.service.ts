@@ -1,7 +1,7 @@
 import { datahouse } from "../configs/core.config";
 import { extractQueue } from "../queues/extract.queue";
-import { datawarehouseTombstonesCleanupQueue } from "../queues/datawarehouse-tombstones-cleanup.queue";
-import { orphanFilesCleanupQueue } from "../queues/orphan-files-cleanup.queue";
+import { datawarehouseCleanupQueue } from "../queues/datawarehouse-cleanup.queue";
+import { fileCleanupQueue } from "../queues/file-cleanup.queue";
 import { listSources } from "./source.service";
 
 export async function setupExtractCronJob(params: {
@@ -28,14 +28,14 @@ export async function setupCronJobs(): Promise<void> {
     await setupExtractCronJob({ source });
   }
 
-  await datawarehouseTombstonesCleanupQueue.schedule({
-    key: "datawarehouse-tombstones-cleanup",
+  await datawarehouseCleanupQueue.schedule({
+    key: "datawarehouse-cleanup",
     cron: "15 3 * * *", // daily at 3:15
     data: {},
   });
 
-  await orphanFilesCleanupQueue.schedule({
-    key: "orphan-files-cleanup",
+  await fileCleanupQueue.schedule({
+    key: "file-cleanup",
     cron: "0 3 * * *", // daily at 3:00
     data: {},
   });

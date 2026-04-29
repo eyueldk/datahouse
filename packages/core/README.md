@@ -28,15 +28,31 @@ const books = createCollection({
 
 ### Extractor
 
+`config` is optional on the extractor. When omitted, `extract` is called **without** `config` on the context (unless the host attaches optional source JSON). When a `config` block exists, the host passes `config` from the source row; it may be `undefined` if unset—narrow before use.
+
 ```ts
 const fetcher = createExtractor({
   id: "fetcher",
-  cron: "0 * * * *", // cron expression (optional)
+  cron: "0 * * * *",
+  config: {
+    schema: z.object({ url: z.string().url() }),
+    create: (input) => ({ key: `fetcher:${input.url}`, config: input }),
+  },
   extract: async function* ({ config }) {
-    // fetch and yield items: { key, data }
+    if (!config) return;
     const res = await fetch(config.url);
     const data = await res.json();
     yield { items: [{ key: "item-1", data }] };
+  },
+});
+```
+
+```ts
+const stateless = createExtractor({
+  id: "stateless",
+  cron: "0 * * * *",
+  extract: async function* () {
+    yield { items: [{ key: "row-1", data: { ok: true } }] };
   },
 });
 ```

@@ -21,7 +21,7 @@ import {
 const extractor = createExtractor({
   id: "my-extractor",
   cron: "0 * * * *",
-  extract: async function* ({ config }) {
+  extract: async function* () {
     // yield { items: [{ key, data }] }
   },
 });

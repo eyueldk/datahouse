@@ -128,16 +128,16 @@ export async function saveDatalakeRecords({
   })();
 
   await Promise.all(
-    returned.map((rec, i) => {
+    returned.map((record, i) => {
       const item = items[i];
       if (!item) {
         throw new Error("saveDatalakeRecords: returning record count mismatch");
       }
       return syncFileLinks({
         kind: "datalake",
-        recordId: rec.id,
+        recordId: record.id,
         previousData: previousByKey.get(item.key),
-        nextData: item.data,
+        nextData: record.data,
       });
     }),
   );
@@ -146,7 +146,11 @@ export async function saveDatalakeRecords({
 }
 
 export async function deleteDatalakeRecord(params: { id: string }) {
-  const record = await findDatalakeRecord(params);
+  const [record] = await db
+    .select()
+    .from(datalake)
+    .where(eq(datalake.id, params.id))
+    .limit(1);
   if (!record) return;
   await syncFileLinks({
     kind: "datalake",

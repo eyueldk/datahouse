@@ -1,4 +1,4 @@
-import { createExtractor } from "datahouse/core";
+import { createExtractor, type UploadedFile } from "datahouse/core";
 import wbk from "wikibase-sdk";
 import { z } from "zod";
 
@@ -14,6 +14,7 @@ export interface WikidataBookBinding {
   publicationDate?: WikidataValue;
   isbn?: WikidataValue;
   description?: WikidataValue;
+  artifact?: UploadedFile;
 }
 
 interface WikidataSparqlResponse {
@@ -21,6 +22,10 @@ interface WikidataSparqlResponse {
     bindings?: WikidataBookBinding[];
   };
 }
+
+const wikidataCursorSchema = z.object({
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
 const wikidataSdk = wbk({
   instance: "https://www.wikidata.org",
@@ -39,7 +44,12 @@ export const wikidataExtractor = createExtractor({
       config: input,
     }),
   },
-  async *extract({ config }) {
+  cursor: {
+    schema: wikidataCursorSchema,
+  },
+  async *extract({ config, upload, cursor }) {
+    const offset = cursor?.offset ?? 0;
+
     const query = `
       PREFIX wd: <http://www.wikidata.org/entity/>
       PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -58,7 +68,9 @@ export const wikidataExtractor = createExtractor({
         }
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
       }
+      ORDER BY ?book
       LIMIT ${config.limit}
+      OFFSET ${offset}
     `;
 
     const sparqlUrl = wikidataSdk.sparqlQuery(query);
@@ -77,16 +89,47 @@ export const wikidataExtractor = createExtractor({
     const bindings = payload.results?.bindings ?? [];
     const fetchedAt = new Date().toISOString();
 
+    const items = await Promise.all(
+      bindings.map(async (binding, index) => {
+        const entityKey = binding.book?.value ?? `wikidata-book-${index}`;
+        const artifactJson = JSON.stringify(
+          {
+            source: "wikidata-extractor",
+            entityUri: entityKey,
+            sparqlLimit: config.limit,
+            fetchedAt,
+          },
+          null,
+          2,
+        );
+        const artifact = await upload({
+          content: Buffer.from(artifactJson, "utf8"),
+          name: `wikidata-artifact-${entityKey.replace(/[/\\?*:|"<>]/g, "_").slice(0, 120)}.json`,
+          mimeType: "application/json",
+        });
+
+        return {
+          key: entityKey,
+          data: {
+            ...binding,
+            artifact,
+          },
+          metadata: {
+            upstream: "wikidata",
+            sparqlLimit: config.limit,
+            sparqlOffset: offset,
+            fetchedAt,
+          },
+        };
+      }),
+    );
+
+    const hasMore =
+      bindings.length > 0 && bindings.length === config.limit;
+
     yield {
-      items: bindings.map((binding, index) => ({
-        key: binding.book?.value ?? `wikidata-book-${index}`,
-        data: binding,
-        metadata: {
-          upstream: "wikidata",
-          sparqlLimit: config.limit,
-          fetchedAt,
-        },
-      })),
+      items,
+      cursor: hasMore ? { offset: offset + config.limit } : { offset: 0 },
     };
   },
 });

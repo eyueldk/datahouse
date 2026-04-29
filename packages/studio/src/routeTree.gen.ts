@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as RunsRouteImport } from './routes/runs'
+import { Route as FilesRouteImport } from './routes/files'
 import { Route as ExtractorsRouteImport } from './routes/extractors'
 import { Route as DatawarehouseRouteImport } from './routes/datawarehouse'
 import { Route as DatalakeRouteImport } from './routes/datalake'
@@ -24,6 +25,11 @@ const SourcesRoute = SourcesRouteImport.update({
 const RunsRoute = RunsRouteImport.update({
   id: '/runs',
   path: '/runs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FilesRoute = FilesRouteImport.update({
+  id: '/files',
+  path: '/files',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExtractorsRoute = ExtractorsRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/datalake': typeof DatalakeRoute
   '/datawarehouse': typeof DatawarehouseRoute
   '/extractors': typeof ExtractorsRoute
+  '/files': typeof FilesRoute
   '/runs': typeof RunsRoute
   '/sources': typeof SourcesRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/datalake': typeof DatalakeRoute
   '/datawarehouse': typeof DatawarehouseRoute
   '/extractors': typeof ExtractorsRoute
+  '/files': typeof FilesRoute
   '/runs': typeof RunsRoute
   '/sources': typeof SourcesRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/datalake': typeof DatalakeRoute
   '/datawarehouse': typeof DatawarehouseRoute
   '/extractors': typeof ExtractorsRoute
+  '/files': typeof FilesRoute
   '/runs': typeof RunsRoute
   '/sources': typeof SourcesRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/datalake'
     | '/datawarehouse'
     | '/extractors'
+    | '/files'
     | '/runs'
     | '/sources'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/datalake'
     | '/datawarehouse'
     | '/extractors'
+    | '/files'
     | '/runs'
     | '/sources'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/datalake'
     | '/datawarehouse'
     | '/extractors'
+    | '/files'
     | '/runs'
     | '/sources'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   DatalakeRoute: typeof DatalakeRoute
   DatawarehouseRoute: typeof DatawarehouseRoute
   ExtractorsRoute: typeof ExtractorsRoute
+  FilesRoute: typeof FilesRoute
   RunsRoute: typeof RunsRoute
   SourcesRoute: typeof SourcesRoute
 }
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/runs'
       fullPath: '/runs'
       preLoaderRoute: typeof RunsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/files': {
+      id: '/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof FilesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/extractors': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   DatalakeRoute: DatalakeRoute,
   DatawarehouseRoute: DatawarehouseRoute,
   ExtractorsRoute: ExtractorsRoute,
+  FilesRoute: FilesRoute,
   RunsRoute: RunsRoute,
   SourcesRoute: SourcesRoute,
 }

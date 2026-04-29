@@ -3,7 +3,7 @@ import { Play, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toastQueuedRun } from "#/lib/job-toast";
 import { type ColumnDef } from "@tanstack/react-table";
 import { JsonSchemaForm } from "#/components/json-schema-form";
@@ -43,35 +43,30 @@ import {
 import { Textarea } from "#/components/ui/textarea";
 import { parseJsonValue, stringifyJson, toJsonSchema } from "#/lib/json-config";
 import {
-  listSources,
-  listExtractors,
-  createSource,
-  deleteSource,
-  extractSource,
-} from "#/lib/server-functions";
+  useCreateSourceMutation,
+  useDeleteSourceMutation,
+  useExtractSourceMutation,
+  useExtractorsQuery,
+  useSourcesQuery,
+} from "#/hooks/sources.hooks";
 
 export const Route = createFileRoute("/sources")({
-  loader: async () => {
-    const [sourcesPayload, extractorsPayload] = await Promise.all([
-      listSources(),
-      listExtractors(),
-    ]);
-    return {
-      sources: sourcesPayload.items,
-      extractors: extractorsPayload.items,
-    };
-  },
   component: SourcesPage,
 });
 
 function SourcesPage() {
-  const router = useRouter();
-  const { sources, extractors } = Route.useLoaderData();
+  const sourcesQuery = useSourcesQuery({});
+  const extractorsQuery = useExtractorsQuery({});
+  const sources = sourcesQuery.data?.items ?? [];
+  const extractors = extractorsQuery.data?.items ?? [];
   const [open, setOpen] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [inspectSource, setInspectSource] = useState<(typeof sources)[0] | null>(
     null,
   );
+  const createSourceMutation = useCreateSourceMutation();
+  const deleteSourceMutation = useDeleteSourceMutation();
+  const extractSourceMutation = useExtractSourceMutation();
 
   const getExtractorById = (extractorId: string) =>
     extractors.find((extractor) => extractor.id === extractorId);
@@ -90,14 +85,11 @@ function SourcesPage() {
     onSubmit: async ({ value }) => {
       setStatusError(null);
       const parsedConfig = parseJsonValue(value.configJson);
-      await createSource({
-        data: {
-          extractorId: value.extractorId,
-          config: parsedConfig,
-        },
+      await createSourceMutation.mutateAsync({
+        extractorId: value.extractorId,
+        config: parsedConfig,
       });
       setOpen(false);
-      await router.invalidate();
     },
   });
 
@@ -114,17 +106,15 @@ function SourcesPage() {
 
   const extractFromSource = async (id: string) => {
     setStatusError(null);
-    const result = await extractSource({ data: { id } });
+    const result = await extractSourceMutation.mutateAsync({ id });
     toastQueuedRun(navigate, result.jobId, "extract", "Extract run queued");
-    await router.invalidate();
   };
 
   const handleDeleteSource = async (id: string) => {
     setStatusError(null);
     try {
-      await deleteSource({ data: { id } });
+      await deleteSourceMutation.mutateAsync({ id });
       toast.success("Source deleted");
-      await router.invalidate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     }
@@ -146,7 +136,8 @@ function SourcesPage() {
     {
       accessorKey: "createdAt",
       header: "Created At",
-      cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
+      cell: ({ row }) =>
+        new Date(row.getValue("createdAt")).toLocaleString(),
     },
     {
       id: "actions",
@@ -215,7 +206,9 @@ function SourcesPage() {
             <DialogHeader>
               <DialogTitle>Create source</DialogTitle>
               <DialogDescription>
-                Configure source config either with a visual form or raw JSON.
+                Pick an extractor, then set config with the visual or JSON
+                editor. The key is set automatically from the extractor create
+                step.
               </DialogDescription>
             </DialogHeader>
             {extractors.length === 0 ? (
@@ -297,9 +290,9 @@ function SourcesPage() {
                     [state.values.editorMode, state.values.extractorId] as const
                   }
                 >
-                  {([editorMode, extractorId]) => {
+                  {([editorMode, subscribedExtractorId]) => {
                     const selectedSchema = toJsonSchema(
-                      getExtractorById(extractorId)?.schema,
+                      getExtractorById(subscribedExtractorId)?.schema,
                     );
                     return (
                       <form.Field name="configJson">
@@ -343,7 +336,17 @@ function SourcesPage() {
         {statusError ? (
           <p className="text-sm text-destructive">{statusError}</p>
         ) : null}
-        <DataTable columns={columns} data={sources} />
+        {sourcesQuery.error || extractorsQuery.error ? (
+          <p className="text-sm text-destructive">
+            {sourcesQuery.error?.message ?? extractorsQuery.error?.message}
+          </p>
+        ) : null}
+        <DataTable
+          columns={columns}
+          data={sources}
+          loading={sourcesQuery.isLoading || extractorsQuery.isLoading}
+          loadingLabel="Loading sources..."
+        />
       </CardContent>
     </Card>
 
@@ -386,14 +389,16 @@ function SourcesPage() {
                   {JSON.stringify(inspectSource.cursor, null, 2)}
                 </pre>
               </div>
-              <div className="grid gap-2">
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Schema
-                </p>
-                <pre className="max-h-[32vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
-                  {JSON.stringify(inspectSource.schema, null, 2)}
-                </pre>
-              </div>
+              {inspectSource.schema !== undefined ? (
+                <div className="grid gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Schema
+                  </p>
+                  <pre className="max-h-[32vh] overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                    {JSON.stringify(inspectSource.schema, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </SheetContent>
@@ -415,6 +420,9 @@ function SourceDetail(props: { label: string; value: string }) {
 
 function createExampleJson(schema: unknown): string {
   try {
+    if (schema === undefined) {
+      return stringifyJson({});
+    }
     const generated = jsf.generate(toJsonSchema(schema));
     return stringifyJson(generated);
   } catch {

@@ -37,6 +37,10 @@ const DatalakeIdParamsRequest = t.Object({
   id: t.String(),
 });
 
+const DeleteSuccessResponse = t.Object({
+  success: t.Literal(true),
+});
+
 const DatalakeTransformBodyRequest = t.Object({
   transformerIds: t.Optional(t.Array(t.String())),
 });
@@ -76,12 +80,12 @@ export const datalakeRoutes = new Elysia({ tags: ["Datalake"] })
     "/datalake-records/:id",
     async ({ params: { id }, status }) => {
       await deleteDatalakeRecord({ id });
-      return status(204, "");
+      return status(200, { success: true });
     },
     {
       params: DatalakeIdParamsRequest,
       response: {
-        204: t.String(),
+        200: DeleteSuccessResponse,
       },
     },
   )

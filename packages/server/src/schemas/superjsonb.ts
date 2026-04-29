@@ -1,6 +1,6 @@
 import { customType } from "drizzle-orm/pg-core";
-import superjson, { type SuperJSONResult } from "superjson";
 import { UploadedFile } from "@datahousejs/core";
+import superjson, { type SuperJSONResult } from "superjson";
 
 superjson.registerClass(UploadedFile);
 

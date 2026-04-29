@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { Play, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { type ColumnDef } from "@tanstack/react-table";
+import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import {
   Card,
@@ -38,35 +43,46 @@ import {
 } from "#/components/ui/sheet";
 import type { DatalakeRecord } from "@datahousejs/client";
 import {
-  deleteDatalakeRecord,
-  listDatalake,
-  listTransformers,
-  transformDatalake,
-} from "#/lib/server-functions";
+  useDatalakeQuery,
+  useDeleteDatalakeRecordMutation,
+  useTransformDatalakeMutation,
+  useTransformersQuery,
+} from "#/hooks/datalake.hooks";
 import { toastQueuedTransformBatch } from "#/lib/job-toast";
+import {
+  TableCellTruncate,
+  TableLinkTruncate,
+} from "#/components/table-cell-truncate";
 
 export const Route = createFileRoute("/datalake")({
-  loader: async () => {
-    const { items } = await listDatalake({ data: {} });
-    return { records: items };
-  },
+  validateSearch: z.object({
+    inspect: z.string().optional(),
+  }),
   component: DatalakePage,
 });
 
 function DatalakePage() {
-  const router = useRouter();
-  const { records } = Route.useLoaderData();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const inspectFromUrl = Route.useSearch({ select: (s) => s.inspect });
+  const recordsQuery = useDatalakeQuery({});
+  const records = recordsQuery.data?.items ?? [];
   const [selectedRecord, setSelectedRecord] = useState<DatalakeRecord | null>(
     null,
   );
   const [transformRecord, setTransformRecord] = useState<DatalakeRecord | null>(
     null,
   );
-  const [transformerList, setTransformerList] = useState<{ id: string }[]>([]);
   const [selectedTransformerIds, setSelectedTransformerIds] = useState<
     Set<string>
   >(new Set());
   const [transformLoading, setTransformLoading] = useState(false);
+  const transformersQuery = useTransformersQuery(
+    { extractorId: transformRecord?.extractorId },
+    { enabled: transformRecord !== null },
+  );
+  const transformerList = transformersQuery.data?.items ?? [];
+  const transformDatalakeMutation = useTransformDatalakeMutation();
+  const deleteDatalakeRecordMutation = useDeleteDatalakeRecordMutation();
 
   const browseForm = useForm({
     defaultValues: {
@@ -79,32 +95,23 @@ function DatalakePage() {
   ).sort((a, b) => a.localeCompare(b));
 
   useEffect(() => {
+    if (!inspectFromUrl) return;
+    const hit = records.find((r) => r.id === inspectFromUrl);
+    if (hit) setSelectedRecord(hit);
+  }, [inspectFromUrl, records]);
+
+  useEffect(() => {
     if (!transformRecord) {
-      setTransformerList([]);
       setSelectedTransformerIds(new Set());
       return;
     }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const { items } = await listTransformers({
-          data: {
-            extractorId: transformRecord.extractorId,
-          },
-        });
-        if (cancelled) return;
-        setTransformerList(items);
-        setSelectedTransformerIds(new Set(items.map((x) => x.id)));
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e));
-        setTransformerList([]);
-        setSelectedTransformerIds(new Set());
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [transformRecord]);
+    if (transformersQuery.error) {
+      toast.error(transformersQuery.error.message);
+      setSelectedTransformerIds(new Set());
+      return;
+    }
+    setSelectedTransformerIds(new Set(transformerList.map((x) => x.id)));
+  }, [transformRecord, transformerList, transformersQuery.error]);
 
   function toggleTransformer(id: string) {
     setSelectedTransformerIds((prev) => {
@@ -114,8 +121,6 @@ function DatalakePage() {
       return next;
     });
   }
-
-  const navigate = useNavigate();
 
   async function submitTransform() {
     if (!transformRecord) return;
@@ -128,15 +133,12 @@ function DatalakePage() {
       const allSelected =
         transformerList.length > 0 &&
         selectedTransformerIds.size === transformerList.length;
-      const r = await transformDatalake({
-        data: {
-          id: transformRecord.id,
-          transformerIds: allSelected ? undefined : [...selectedTransformerIds],
-        },
+      const r = await transformDatalakeMutation.mutateAsync({
+        id: transformRecord.id,
+        transformerIds: allSelected ? undefined : [...selectedTransformerIds],
       });
       setTransformRecord(null);
       toastQueuedTransformBatch(navigate, r.runIds, r.enqueued);
-      await router.invalidate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -145,20 +147,50 @@ function DatalakePage() {
   }
 
   const columns: ColumnDef<DatalakeRecord>[] = [
-    { accessorKey: "id", header: "ID" },
-    { accessorKey: "key", header: "Key" },
-    { accessorKey: "extractorId", header: "Extractor" },
-    { accessorKey: "runId", header: "Run" },
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => (
+        <TableCellTruncate text={row.original.id} variant="id" />
+      ),
+    },
+    {
+      accessorKey: "key",
+      header: "Key",
+      cell: ({ row }) => (
+        <TableCellTruncate text={row.original.key} variant="key" />
+      ),
+    },
+    {
+      accessorKey: "extractorId",
+      header: "Extractor",
+      cell: ({ row }) => (
+        <TableCellTruncate text={row.original.extractorId} variant="key" />
+      ),
+    },
+    {
+      accessorKey: "runId",
+      header: "Run",
+      cell: ({ row }) => (
+        <TableLinkTruncate
+          to="/runs"
+          search={{ page: 0, id: row.original.runId }}
+          label={row.original.runId}
+          variant="id"
+        />
+      ),
+    },
     {
       accessorKey: "createdAt",
       header: "Created At",
-      cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
+      cell: ({ row }) =>
+        new Date(row.getValue("createdAt")).toLocaleString(),
     },
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
+        <div className="flex shrink-0 justify-end gap-1">
           <Button
             type="button"
             size="icon"
@@ -177,7 +209,13 @@ function DatalakePage() {
             className="shrink-0"
             aria-label="Inspect record"
             title="Inspect record"
-            onClick={() => setSelectedRecord(row.original)}
+            onClick={() => {
+              setSelectedRecord(row.original);
+              void navigate({
+                to: "/datalake",
+                search: { inspect: row.original.id },
+              });
+            }}
           >
             <Search className="size-4" aria-hidden />
           </Button>
@@ -191,9 +229,10 @@ function DatalakePage() {
             onClick={() => {
               void (async () => {
                 try {
-                  await deleteDatalakeRecord({ data: { id: row.original.id } });
+                  await deleteDatalakeRecordMutation.mutateAsync({
+                    id: row.original.id,
+                  });
                   toast.success("Datalake record deleted");
-                  await router.invalidate();
                 } catch (e) {
                   toast.error(e instanceof Error ? e.message : String(e));
                 }
@@ -216,7 +255,7 @@ function DatalakePage() {
             Raw records produced by extractors before transformation.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           <div className="mb-4 grid gap-2">
             <browseForm.Field name="extractorId">
               {(field) => (
@@ -244,6 +283,11 @@ function DatalakePage() {
               )}
             </browseForm.Field>
           </div>
+          {recordsQuery.error ? (
+            <p className="mb-4 text-sm text-destructive">
+              {recordsQuery.error.message}
+            </p>
+          ) : null}
           <browseForm.Subscribe selector={(state) => state.values.extractorId}>
             {(extractorId) => (
               <DataTable
@@ -255,6 +299,8 @@ function DatalakePage() {
                         (record) => record.extractorId === extractorId,
                       )
                 }
+                loading={recordsQuery.isLoading}
+                loadingLabel="Loading datalake records..."
               />
             )}
           </browseForm.Subscribe>
@@ -327,7 +373,15 @@ function DatalakePage() {
 
       <Sheet
         open={selectedRecord !== null}
-        onOpenChange={(open) => !open && setSelectedRecord(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRecord(null);
+            void navigate({
+              to: "/datalake",
+              search: { inspect: undefined },
+            });
+          }
+        }}
       >
         <SheetContent
           side="right"
@@ -340,11 +394,46 @@ function DatalakePage() {
             </SheetDescription>
           </SheetHeader>
           {selectedRecord ? (
-            <div className="grid flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
-              <Detail label="ID" value={selectedRecord.id} />
-              <Detail label="Run ID" value={selectedRecord.runId} />
-              <Detail label="Source ID" value={selectedRecord.sourceId} />
-              <Detail label="Extractor ID" value={selectedRecord.extractorId} />
+            <div className="grid min-w-0 flex-1 gap-4 overflow-y-auto px-4 pb-4 text-sm">
+              <DetailMono label="ID">
+                <Link
+                  to="/files"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.id}
+                </Link>
+              </DetailMono>
+              <DetailMono label="Run ID">
+                <Link
+                  to="/runs"
+                  search={{
+                    page: 0,
+                    id: selectedRecord.runId,
+                  }}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.runId}
+                </Link>
+              </DetailMono>
+              <DetailMono label="Source ID">
+                <span className="mr-2 truncate" title={selectedRecord.sourceId}>
+                  {selectedRecord.sourceId}
+                </span>
+                <Link
+                  to="/sources"
+                  className="text-primary shrink-0 text-xs underline-offset-4 hover:underline"
+                >
+                  Sources
+                </Link>
+              </DetailMono>
+              <DetailMono label="Extractor ID">
+                <Link
+                  to="/extractors"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {selectedRecord.extractorId}
+                </Link>
+              </DetailMono>
               <Detail label="Key" value={selectedRecord.key} />
               <Detail
                 label="Created At"
@@ -378,9 +467,23 @@ function DatalakePage() {
   );
 }
 
+function DetailMono(props: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid min-w-0 gap-1">
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {props.label}
+      </p>
+      <div className="flex min-w-0 items-baseline gap-2">{props.children}</div>
+    </div>
+  );
+}
+
 function Detail(props: { label: string; value: string }) {
   return (
-    <div className="grid gap-1">
+    <div className="grid min-w-0 gap-1">
       <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {props.label}
       </p>

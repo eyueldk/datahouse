@@ -1,0 +1,1 @@
+ALTER TABLE "files" DROP CONSTRAINT "files_one_record_kind";

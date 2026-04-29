@@ -1,5 +1,6 @@
 import type { AnyDatahouse } from "@datahousejs/core";
 import { DatalakeRecordsClient } from "./apis/datalake";
+import { FilesClient } from "./apis/files";
 import {
   DatawarehouseCollectionsClient,
   DatawarehouseRecordsClient,
@@ -15,6 +16,7 @@ import type { CollectionFromDatahouse } from "./types";
 
 export class DatahouseClient<TDatahouse extends AnyDatahouse> {
   public readonly datalakeRecords;
+  public readonly files;
   public readonly extractors;
   public readonly runs;
   public readonly sources;
@@ -27,6 +29,7 @@ export class DatahouseClient<TDatahouse extends AnyDatahouse> {
   constructor(params: { baseUrl: string }) {
     const client = createEdenFetchClient(params);
     this.datalakeRecords = new DatalakeRecordsClient(client);
+    this.files = new FilesClient(client);
     this.extractors = new ExtractorsClient(client);
     this.runs = new RunsClient(client);
     this.sources = new SourcesClient(client);

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   Database,
   Droplets,
+  FileText,
   HardDrive,
   Play,
   Warehouse,
@@ -51,7 +52,7 @@ export function Sidebar() {
           </Link>
           <Link
             to="/runs"
-            search={{ page: 0, type: "all" }}
+            search={{ page: 0 }}
             className={cn(
               buttonVariants({
                 variant: "ghost",
@@ -91,6 +92,20 @@ export function Sidebar() {
           >
             <Warehouse className="h-4 w-4" />
             Data warehouse
+          </Link>
+          <Link
+            to="/files"
+            className={cn(
+              buttonVariants({
+                variant: "ghost",
+                className:
+                  "w-full justify-start gap-3 text-muted-foreground [&.active]:bg-muted [&.active]:text-foreground",
+              }),
+            )}
+            activeProps={{ className: "active" }}
+          >
+            <FileText className="h-4 w-4" />
+            Files
           </Link>
         </nav>
       </div>

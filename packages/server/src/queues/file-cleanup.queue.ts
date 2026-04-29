@@ -1,6 +1,7 @@
-import { and, isNull, lt } from "drizzle-orm";
+import { and, eq, lt, notExists } from "drizzle-orm";
 import { queueBackend } from "../configs/queue.config";
 import { dbBackend } from "../configs/database.config";
+import { fileReferences } from "../schemas/file-references";
 import { files } from "../schemas/files";
 import { deleteFile } from "../services/files.service";
 
@@ -8,17 +9,17 @@ const { db } = dbBackend;
 
 const ORPHAN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export type OrphanFilesCleanupQueueData = Record<string, never>;
+export type FileCleanupQueueData = Record<string, never>;
 
-export interface OrphanFilesCleanupQueueResult {
+export interface FileCleanupQueueResult {
   deleted: number;
 }
 
-export const orphanFilesCleanupQueue = queueBackend.register<
-  OrphanFilesCleanupQueueData,
-  OrphanFilesCleanupQueueResult
+export const fileCleanupQueue = queueBackend.register<
+  FileCleanupQueueData,
+  FileCleanupQueueResult
 >({
-  name: "orphan-files-cleanup",
+  name: "file-cleanup",
   execute: async () => {
     const cutoff = new Date(Date.now() - ORPHAN_MAX_AGE_MS);
     const candidates = await db
@@ -26,8 +27,12 @@ export const orphanFilesCleanupQueue = queueBackend.register<
       .from(files)
       .where(
         and(
-          isNull(files.datalakeId),
-          isNull(files.datawarehouseId),
+          notExists(
+            db
+              .select({ id: fileReferences.id })
+              .from(fileReferences)
+              .where(eq(fileReferences.fileId, files.id)),
+          ),
           lt(files.createdAt, cutoff),
         ),
       );

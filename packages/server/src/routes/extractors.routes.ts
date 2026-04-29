@@ -4,7 +4,7 @@ import { datahouse } from "../configs/core.config";
 const ExtractorResponse = t.Object({
   id: t.String(),
   cron: t.Optional(t.String()),
-  schema: t.Any(),
+  schema: t.Optional(t.Any()),
 });
 
 const PaginationMetaResponse = t.Object({
@@ -35,7 +35,7 @@ export const extractorRoutes = new Elysia({ tags: ["Extractors"] }).get(
         extractorsMap.set(pipeline.extractor.id, {
           id: pipeline.extractor.id,
           cron: pipeline.extractor.cron,
-          schema: pipeline.extractor.config.schema.toJSONSchema(),
+          schema: pipeline.extractor.config.schema?.toJSONSchema(),
         });
       }
     }

@@ -62,6 +62,10 @@ const RecordIdParamsRequest = t.Object({
   id: t.String(),
 });
 
+const DeleteSuccessResponse = t.Object({
+  success: t.Literal(true),
+});
+
 export const datawarehouseRoutes = new Elysia({ tags: ["Datawarehouse"] })
   .get(
     "/datawarehouse-collections",
@@ -127,12 +131,12 @@ export const datawarehouseRoutes = new Elysia({ tags: ["Datawarehouse"] })
     "/datawarehouse-records/:id",
     async ({ params: { id }, status }) => {
       await deleteDatawarehouseRecordById({ id });
-      return status(204, "");
+      return status(200, { success: true });
     },
     {
       params: RecordIdParamsRequest,
       response: {
-        204: t.String(),
+        200: DeleteSuccessResponse,
       },
     },
   );

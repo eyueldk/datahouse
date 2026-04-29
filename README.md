@@ -29,7 +29,7 @@ const books = createCollection({
 const fetcher = createExtractor({
   id: "fetcher",
   cron: "0 * * * *",
-  extract: async function* ({ config }) {
+  extract: async function* () {
     const res = await fetch("https://openlibrary.org/works/OL12345.json");
     yield { items: [{ key: "book1", data: await res.json() }] };
   },

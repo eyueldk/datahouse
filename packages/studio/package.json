@@ -1,7 +1,7 @@
 {
   "name": "@datahousejs/studio",
   "private": false,
-  "version": "0.2.10",
+  "version": "0.2.12",
   "type": "module",
   "description": "Datahouse studio",
   "repository": "https://github.com/eyueldk/datahouse",
@@ -45,6 +45,7 @@
     "clsx": "^2.1.1",
     "json-schema-faker": "^0.6.0",
     "lucide-react": "^0.577.0",
+    "pretty-bytes": "^7.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "shadcn": "^4.0.8",

@@ -1,17 +1,10 @@
-import { and, eq, gte, lt, or, sql } from "drizzle-orm";
+import { and, eq, gte, or, sql } from "drizzle-orm";
 import { dbBackend } from "../configs/database.config";
 import { datawarehouse } from "../schemas/datawarehouse";
 import { datawarehouseTombstones } from "../schemas/datawarehouse-tombstones";
 import { syncFileLinks } from "./files.service";
 
 const { db } = dbBackend;
-
-const TOMBSTONE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
-
-export async function purgeExpiredDatawarehouseTombstones() {
-  const cutoff = new Date(Date.now() - TOMBSTONE_RETENTION_MS);
-  await db.delete(datawarehouseTombstones).where(lt(datawarehouseTombstones.deletedAt, cutoff));
-}
 
 async function upsertDatawarehouseTombstones(
   rows: { collection: string; key: string }[],
@@ -194,7 +187,7 @@ export async function saveDatawarehouseRecords({
         previousData: previousByCollectionKey.get(
           collectionKey(item.collection, item.key),
         ),
-        nextData: item.data,
+        nextData: rec.data,
       });
     }),
   );
@@ -206,8 +199,6 @@ export async function paginateDatawarehouseTombstones(params: {
   limit: number;
   offset: number;
 }) {
-  await purgeExpiredDatawarehouseTombstones();
-
   const limit = Math.min(Math.max(1, params.limit), 500);
   const offset = Math.max(0, params.offset);
   const { collection } = params;

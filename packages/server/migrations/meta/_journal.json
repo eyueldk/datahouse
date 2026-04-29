@@ -22,6 +22,20 @@
       "when": 1777199647909,
       "tag": "0002_keen_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777217400324,
+      "tag": "0003_wild_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777460057978,
+      "tag": "0004_harsh_runaways",
+      "breakpoints": true
     }
   ]
 }

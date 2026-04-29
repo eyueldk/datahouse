@@ -4,7 +4,7 @@ import type { EdenFetchClient } from "../utils/eden.ts";
 export interface ExtractorInfo {
   id: string;
   cron?: string;
-  schema: object;
+  schema?: object;
 }
 
 export class ExtractorsClient {

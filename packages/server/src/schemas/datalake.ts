@@ -13,7 +13,7 @@ export const datalake = pgTable("datalake", {
     .references(() => sources.id, { onDelete: "cascade" }),
   extractorId: text("extractor_id").notNull(),
   key: text("key").notNull().unique(),
-  data: superjsonb("data").notNull(),
+  data: superjsonb("data").$type<any>().notNull(),
   metadata: superjsonb("metadata")
     .$type<Record<string, any>>()
     .notNull()

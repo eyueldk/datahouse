@@ -1,5 +1,6 @@
 import { unwrapData } from "../utils";
 import type { EdenFetchClient } from "../utils/eden.ts";
+import type { DatalakeRecord, PaginatedResponse } from "../types";
 
 export interface TriggerDatalakeTransformsResult {
   jobId: string;
@@ -27,7 +28,10 @@ export class DatalakeRecordsClient {
         offset: params.offset,
       },
     });
-    return unwrapData(response, "Failed to list datalake records");
+    return unwrapData(
+      response,
+      "Failed to list datalake records",
+    );
   }
 
   async delete(params: { id: string }) {
@@ -35,11 +39,7 @@ export class DatalakeRecordsClient {
       method: "DELETE",
       params: { id: params.id },
     });
-    if (response.error) {
-      throw new Error(
-        `Failed to delete datalake record ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
-      );
-    }
+    return unwrapData(response, `Failed to delete datalake record ${params.id}`);
   }
 
   async *pages(params?: {
@@ -49,21 +49,20 @@ export class DatalakeRecordsClient {
     limit?: number;
     offset?: number;
   }) {
-    const limit = params?.limit;
-    let offset = params?.offset ?? 0;
+    let offset = params?.offset;
     while (true) {
       const page = await this.list({
         extractorId: params?.extractorId,
         sourceId: params?.sourceId,
         since: params?.since,
-        limit,
+        limit: params?.limit,
         offset,
       });
       if (page.items.length === 0) {
         break;
       }
       yield page;
-      offset += page.items.length;
+      offset = page.meta.offset + page.items.length;
       if (offset >= page.meta.total) {
         break;
       }

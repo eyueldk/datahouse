@@ -1,37 +1,12 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  integer,
-  check,
-} from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { datalake } from "./datalake";
-import { datawarehouse } from "./datawarehouse";
+import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-export const files = pgTable(
-  "files",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    key: text("key").notNull().unique(),
-    name: text("name").notNull(),
-    mimeType: text("mime_type"),
-    size: integer("size"),
-    checksum: text("checksum").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    datalakeId: uuid("datalake_id").references(() => datalake.id, {
-      onDelete: "set null",
-    }),
-    datawarehouseId: uuid("datawarehouse_id").references(
-      () => datawarehouse.id,
-      { onDelete: "set null" },
-    ),
-  },
-  (t) => [
-    check(
-      "files_one_record_kind",
-      sql`(${t.datalakeId} IS NULL) OR (${t.datawarehouseId} IS NULL)`,
-    ),
-  ],
-);
+/** File blob metadata and storage key. */
+export const files = pgTable("files", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  mimeType: text("mime_type"),
+  size: integer("size"),
+  checksum: text("checksum").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

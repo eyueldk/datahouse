@@ -2,6 +2,7 @@ import type { AnyDatahouse } from "@datahousejs/core";
 import type { AnyCollection } from "@datahousejs/core";
 import type { AnyPipeline } from "@datahousejs/core";
 import type { z } from "zod";
+import type { FilesClient } from "./apis/files";
 
 /** Flattens intersections so quick-info shows a single object shape. */
 export type Prettify<T> = { [K in keyof T]: T[K] } & {};
@@ -67,7 +68,7 @@ export type DatawarehouseRecord<
 }>;
 
 /** Raw extracted record in the datalake (not tied to a typed collection). */
-export type DatalakeRecord = Prettify<{
+export type DatalakeRecord = {
   id: string;
   runId: string;
   sourceId: string;
@@ -76,7 +77,10 @@ export type DatalakeRecord = Prettify<{
   data: object;
   metadata: Record<string, any>;
   createdAt: Date;
-}>;
+};
+
+/** Uploaded file row returned by the files API. */
+export type FileRecord = Awaited<ReturnType<FilesClient["list"]>>["items"][number];
 
 export interface PaginationMeta {
   offset: number;
@@ -86,12 +90,12 @@ export interface PaginationMeta {
 
 /** Page of API items, e.g. `PaginatedResponse<DatawarehouseRecord<…, "your-collection-id">>`. */
 export type PaginatedResponse<TItem> = {
-  items: Prettify<TItem>[];
+  items: TItem[];
   meta: PaginationMeta;
 };
 
 /** Row shape for `PaginatedResponse<DatawarehouseTombstone>` from tombstones endpoint. */
-export type DatawarehouseTombstone = Prettify<{
+export type DatawarehouseTombstone = {
   key: string;
   deletedAt: Date;
-}>;
+};

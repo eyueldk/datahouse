@@ -9,7 +9,7 @@ import {
   findRun,
 } from "../services/run.service";
 import { saveDatalakeRecords } from "../services/datalake.service";
-import { uploadFile, downloadFile } from "../services/files.service";
+import { downloadFile, uploadFile } from "../services/files.service";
 import { enqueueTransformations } from "../services/transform-enqueue.service";
 
 export interface ExtractQueueData {
@@ -109,9 +109,12 @@ export const extractQueue = queueBackend.register<
             createdAt: record.createdAt,
           });
         },
-        download: async (params: { file: UploadedFile }) => {
-          const { content } = await downloadFile({ id: params.file.id });
-          return content;
+        download: async (params) => {
+          const result = await downloadFile({ id: params.file.id });
+          if (!result) {
+            throw new Error(`File not found: ${params.file.id}`);
+          }
+          return result;
         },
       })) {
         const { items, cursor } = batch;

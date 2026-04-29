@@ -6,6 +6,7 @@ export * from "./apis/sources";
 export * from "./apis/extractors";
 export * from "./apis/runs";
 export * from "./apis/datalake";
+export * from "./apis/files";
 export * from "./apis/datawarehouse";
 export * from "./apis/transformers";
 export * from "./apis/version";

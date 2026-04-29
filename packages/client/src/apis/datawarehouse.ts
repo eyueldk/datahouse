@@ -29,15 +29,14 @@ export class DatawarehouseTombstonesClient<TCollection extends AnyCollection> {
     limit?: number;
     offset?: number;
   }) {
-    const limit = params.limit ?? 50;
-    let offset = params.offset ?? 0;
+    let offset = params.offset;
     while (true) {
       const response = await this.client("/api/datawarehouse-tombstones", {
         method: "POST",
         body: {
           collection: params.collection,
           since: params.since ?? undefined,
-          limit,
+          limit: params.limit,
           offset,
         },
       });
@@ -49,7 +48,7 @@ export class DatawarehouseTombstonesClient<TCollection extends AnyCollection> {
         break;
       }
       yield page;
-      offset += page.items.length;
+      offset = page.meta.offset + page.items.length;
       if (offset >= page.meta.total) {
         break;
       }
@@ -60,6 +59,41 @@ export class DatawarehouseTombstonesClient<TCollection extends AnyCollection> {
 export class DatawarehouseRecordsClient<TCollection extends AnyCollection> {
   constructor(private client: EdenFetchClient) {}
 
+  async list<
+    const TCollectionId extends CollectionIdFromCollection<TCollection>,
+  >(params: {
+    collection: TCollectionId;
+    since?: Date | null;
+    limit?: number;
+    offset?: number;
+  }): Promise<
+    PaginatedResponse<
+      DatawarehouseRecord<
+        CollectionDataByIdFromCollection<TCollection, TCollectionId>,
+        TCollectionId
+      >
+    >
+  > {
+    const response = await this.client("/api/datawarehouse-records", {
+      method: "POST",
+      body: {
+        collection: params.collection,
+        since: params.since ?? undefined,
+        limit: params.limit,
+        offset: params.offset,
+      },
+    });
+    return unwrapData(
+      response,
+      "Failed to list datawarehouse records",
+    ) as PaginatedResponse<
+      DatawarehouseRecord<
+        CollectionDataByIdFromCollection<TCollection, TCollectionId>,
+        TCollectionId
+      >
+    >;
+  }
+
   async *pages<
     const TCollectionId extends CollectionIdFromCollection<TCollection>,
   >(params: {
@@ -68,32 +102,19 @@ export class DatawarehouseRecordsClient<TCollection extends AnyCollection> {
     limit?: number;
     offset?: number;
   }) {
-    const limit = params.limit ?? 50;
-    let offset = params.offset ?? 0;
+    let offset = params.offset;
     while (true) {
-      const response = await this.client("/api/datawarehouse-records", {
-        method: "POST",
-        body: {
-          collection: params.collection,
-          since: params.since ?? undefined,
-          limit,
-          offset,
-        },
+      const page = await this.list({
+        collection: params.collection,
+        since: params.since,
+        limit: params.limit,
+        offset,
       });
-      const page = unwrapData(
-        response,
-        "Failed to list datawarehouse records",
-      ) as PaginatedResponse<
-        DatawarehouseRecord<
-          CollectionDataByIdFromCollection<TCollection, TCollectionId>,
-          TCollectionId
-        >
-      >;
       if (page.items.length === 0) {
         break;
       }
       yield page;
-      offset += page.items.length;
+      offset = page.meta.offset + page.items.length;
       if (offset >= page.meta.total) {
         break;
       }
@@ -105,10 +126,9 @@ export class DatawarehouseRecordsClient<TCollection extends AnyCollection> {
       method: "DELETE",
       params: { id: params.id },
     });
-    if (response.error) {
-      throw new Error(
-        `Failed to delete datawarehouse record ${params.id} (status ${response.error.status}): ${JSON.stringify(response.error.value)}`,
-      );
-    }
+    return unwrapData(
+      response,
+      `Failed to delete datawarehouse record ${params.id}`,
+    );
   }
 }

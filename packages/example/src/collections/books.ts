@@ -1,4 +1,4 @@
-import { createCollection } from "datahouse/core";
+import { UploadedFile, createCollection } from "datahouse/core";
 import { z } from "zod";
 
 export const unifiedBookSchema = z.object({
@@ -9,6 +9,7 @@ export const unifiedBookSchema = z.object({
   isbn: z.string().nullable(),
   description: z.string().nullable(),
   source: z.enum(["OpenLibrary", "Wikidata"]),
+  artifact: z.instanceof(UploadedFile).optional(),
 });
 
 export const booksCollection = createCollection({

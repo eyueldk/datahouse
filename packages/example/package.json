@@ -1,6 +1,6 @@
 {
   "name": "example",
-  "version": "0.2.10",
+  "version": "0.2.12",
   "type": "module",
   "private": true,
   "description": "Example Datahouse project",

@@ -17,7 +17,7 @@ const SourceResponse = t.Object({
   key: t.String(),
   config: t.Any(),
   cursor: t.Any(),
-  schema: t.Any(),
+  schema: t.Optional(t.Any()),
   createdAt: t.Date(),
 });
 
@@ -38,7 +38,7 @@ const ListSourcesQueryRequest = t.Object({
 
 const CreateSourceBodyRequest = t.Object({
   extractorId: t.String(),
-  config: t.Optional(t.Any()),
+  config: t.Any(),
 });
 
 const UpdateSourceBodyRequest = t.Object({
@@ -61,11 +61,15 @@ const ErrorResponse = t.Object({
   error: t.String(),
 });
 
-function getExtractorSchema(extractorId: string): unknown {
+const DeleteSuccessResponse = t.Object({
+  success: t.Literal(true),
+});
+
+function getExtractorSchema(extractorId: string): unknown | undefined {
   const pipeline = datahouse.pipelines.find(
     (item) => item.extractor.id === extractorId,
   );
-  return pipeline?.extractor.config.schema.toJSONSchema() ?? {};
+  return pipeline?.extractor.config.schema?.toJSONSchema();
 }
 
 function withExtractorSchema<
@@ -114,15 +118,19 @@ export const sourceRoutes = new Elysia({ tags: ["Sources"] })
         });
       }
 
-      const parsed = await pipeline.extractor.config.schema.safeParseAsync(
-        body.config,
-      );
-      if (!parsed.success) {
-        return status(400, { error: String(parsed.error) });
+      const extractorConfig = pipeline.extractor.config;
+      let createInput;
+      if (extractorConfig.schema) {
+        const parsed = await extractorConfig.schema.safeParseAsync(
+          body.config,
+        );
+        if (!parsed.success) {
+          return status(400, { error: String(parsed.error) });
+        }
+        createInput = parsed.data;
       }
 
-      const sourceDefinition =
-        await pipeline.extractor.config.create(parsed.data);
+      const sourceDefinition = await extractorConfig.create(createInput);
       const source = await createSource({
         extractorId: body.extractorId,
         key: sourceDefinition.key,
@@ -181,12 +189,12 @@ export const sourceRoutes = new Elysia({ tags: ["Sources"] })
     "/sources/:id",
     async ({ params: { id }, status }) => {
       await deleteSource(id);
-      return status(204, "");
+      return status(200, { success: true });
     },
     {
       params: SourceParamsRequest,
       response: {
-        204: t.String(),
+        200: DeleteSuccessResponse,
       },
     },
   )

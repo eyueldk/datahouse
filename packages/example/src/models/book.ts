@@ -1,3 +1,5 @@
+import type { UploadedFile } from "datahouse/core";
+
 export type BookSource = "OpenLibrary" | "Wikidata";
 
 export interface UnifiedBook {
@@ -8,4 +10,5 @@ export interface UnifiedBook {
   isbn: string | null;
   description: string | null;
   source: BookSource;
+  artifact?: UploadedFile;
 }

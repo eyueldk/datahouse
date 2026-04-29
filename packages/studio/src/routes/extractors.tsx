@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "#/components/ui/card";
 import { DataTable } from "#/components/ui/data-table";
-import { listExtractors } from "#/lib/server-functions";
+import { useExtractorsQuery } from "#/hooks/extractors.hooks";
 
 const columns: ColumnDef<ExtractorInfo>[] = [
   {
@@ -24,15 +24,12 @@ const columns: ColumnDef<ExtractorInfo>[] = [
 ];
 
 export const Route = createFileRoute("/extractors")({
-  loader: async () => {
-    const payload = await listExtractors();
-    return { extractors: payload.items };
-  },
   component: ExtractorsPage,
 });
 
 function ExtractorsPage() {
-  const { extractors } = Route.useLoaderData();
+  const extractorsQuery = useExtractorsQuery({});
+  const extractors = extractorsQuery.data?.items ?? [];
 
   return (
     <Card>
@@ -43,7 +40,17 @@ function ExtractorsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <DataTable columns={columns} data={extractors} />
+        {extractorsQuery.error ? (
+          <p className="text-sm text-destructive">
+            {extractorsQuery.error.message}
+          </p>
+        ) : null}
+        <DataTable
+          columns={columns}
+          data={extractors}
+          loading={extractorsQuery.isLoading}
+          loadingLabel="Loading extractors..."
+        />
       </CardContent>
     </Card>
   );

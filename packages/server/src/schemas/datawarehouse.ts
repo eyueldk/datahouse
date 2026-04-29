@@ -22,7 +22,7 @@ export const datawarehouse = pgTable(
     transformerId: text("transformer_id").notNull(),
     collection: text("collection").notNull(),
     key: text("key").notNull(),
-    data: superjsonb("data").notNull(),
+    data: superjsonb("data").$type<any>().notNull(),
     metadata: superjsonb("metadata")
       .$type<Record<string, any>>()
       .notNull()

@@ -2,15 +2,30 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@datahousejs/client";
 import type { AnyDatahouse } from "@datahousejs/core";
 
-const DATAHOUSE_URL = process.env.DATAHOUSE_URL ?? "http://localhost:2510";
+/** API base (same as `process.env.DATAHOUSE_URL` with a default for local dev). */
+export const DATAHOUSE_URL = process.env.DATAHOUSE_URL ?? "http://localhost:2510";
 
 const client = createClient<AnyDatahouse>({ baseUrl: DATAHOUSE_URL });
 
-export const getApiVersion = createServerFn().handler(async () => {
+export const getApiVersion = createServerFn({ method: "GET" }).handler(async () => {
   return await client.version.get();
 });
 
-export const listSources = createServerFn({ method: "POST" })
+export const listFiles = createServerFn({ method: "GET" })
+  .inputValidator(
+    (data: Parameters<typeof client.files.list>[0]) => data,
+  )
+  .handler(async ({ data }) => {
+    return await client.files.list(data);
+  });
+
+export const downloadFile = createServerFn({ method: "GET" })
+  .inputValidator((data: Parameters<typeof client.files.download>[0]) => data)
+  .handler(async ({ data }) => {
+    return await client.files.download(data);
+  });
+
+export const listSources = createServerFn({ method: "GET" })
   .inputValidator((data: Parameters<typeof client.sources.list>[0]) => data)
   .handler(async ({ data }) => {
     return await client.sources.list(data);
@@ -34,25 +49,25 @@ export const extractSource = createServerFn({ method: "POST" })
     return await client.sources.extract(data);
   });
 
-export const listExtractors = createServerFn({ method: "POST" })
+export const listExtractors = createServerFn({ method: "GET" })
   .inputValidator((data: Parameters<typeof client.extractors.list>[0]) => data)
   .handler(async ({ data }) => {
     return await client.extractors.list(data);
   });
 
-export const listRuns = createServerFn({ method: "POST" })
+export const listRuns = createServerFn({ method: "GET" })
   .inputValidator((data: Parameters<typeof client.runs.list>[0]) => data)
   .handler(async ({ data }) => {
     return await client.runs.list(data);
   });
 
-export const getRun = createServerFn({ method: "POST" })
+export const getRun = createServerFn({ method: "GET" })
   .inputValidator((data: Parameters<typeof client.runs.get>[0]) => data)
   .handler(async ({ data }) => {
     return await client.runs.get(data);
   });
 
-export const listDatalake = createServerFn({ method: "POST" })
+export const listDatalake = createServerFn({ method: "GET" })
   .inputValidator((data: Parameters<typeof client.datalakeRecords.list>[0]) => data)
   .handler(async ({ data }) => {
     return await client.datalakeRecords.list(data);
@@ -70,28 +85,23 @@ export const deleteDatalakeRecord = createServerFn({ method: "POST" })
     return await client.datalakeRecords.delete(data);
   });
 
-export const listTransformers = createServerFn({ method: "POST" })
+export const listTransformers = createServerFn({ method: "GET" })
   .inputValidator((data: Parameters<typeof client.transformers.list>[0]) => data)
   .handler(async ({ data }) => {
     return await client.transformers.list(data);
   });
 
-export const listDatawarehouseCollections = createServerFn().handler(
-  async () => {
+export const listDatawarehouseCollections = createServerFn({ method: "GET" })
+  .handler(async () => {
     return await client.datawarehouseCollections.list();
-  },
-);
+  });
 
-export const listDatawarehouseRecords = createServerFn({ method: "POST" })
+export const listDatawarehouseRecords = createServerFn({ method: "GET" })
   .inputValidator(
-    (data: Parameters<typeof client.datawarehouseRecords.pages>[0]) => data,
+    (data: Parameters<typeof client.datawarehouseRecords.list>[0]) => data,
   )
   .handler(async ({ data }) => {
-    const items = [];
-    for await (const page of client.datawarehouseRecords.pages(data)) {
-      items.push(...page.items);
-    }
-    return { items };
+    return await client.datawarehouseRecords.list(data);
   });
 
 export const deleteDatawarehouseRecord = createServerFn({ method: "POST" })

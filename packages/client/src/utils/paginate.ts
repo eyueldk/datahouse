@@ -1,12 +1,12 @@
 /** Yields each full page from a list endpoint until all items are consumed. */
 export async function* paginate<
-  TPage extends { items: readonly unknown[]; meta: { total: number } },
+  TPage extends { items: readonly unknown[]; meta: { offset: number; total: number } },
 >(
-  fetchPage: (args: { limit?: number; offset: number }) => Promise<TPage>,
+  fetchPage: (args: { limit?: number; offset?: number }) => Promise<TPage>,
   options: { limit?: number; offset?: number } = {},
 ): AsyncGenerator<TPage, void, undefined> {
   const limit = options.limit;
-  let offset = options.offset ?? 0;
+  let offset = options.offset;
 
   while (true) {
     const page = await fetchPage({ limit, offset });
@@ -14,7 +14,7 @@ export async function* paginate<
       break;
     }
     yield page;
-    offset += page.items.length;
+    offset = page.meta.offset + page.items.length;
     if (offset >= page.meta.total) {
       break;
     }
